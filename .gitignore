@@ -1,0 +1,17 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+
+# OS / Editor junk
+.DS_Store
+Thumbs.db
+
+# XAMPP / database (if any)
+*.sql
+
+# Optional: build output (if you add later)
+dist/
