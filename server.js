@@ -67,11 +67,7 @@ app.get('/api/orders', (req, res) => {
     });
 });
 
-// NEW: API endpoint to fetch order history
 app.get('/api/order-history', (req, res) => {
-    // For order history, we typically want all orders, perhaps with filtering
-    // In this example, the client-side filters after fetching all.
-    // For large datasets, you'd add status/search params here for server-side filtering.
     db.query('SELECT * FROM orders ORDER BY timestamp DESC', (err, results) => {
         if (err) {
             console.error('Order history query error:', err);
@@ -161,7 +157,10 @@ io.on('connection', (socket) => {
             const broadcastOrder = {
                 ...order,
                 id: result.insertId,
-                items: orderData.items
+                // Crucial: send the original parsed items array for display on kitchen side
+                items: orderData.items,
+                total: orderData.total, // Send original total as number
+                timestamp: order.timestamp // Ensure timestamp is included
             };
 
             io.emit('newOrder', broadcastOrder);

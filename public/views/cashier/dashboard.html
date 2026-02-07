@@ -1,122 +1,121 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Cashier Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧾 Cashier Dashboard - Cafeteria System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/style.css"> <!-- General styles, if any -->
+    <!-- Font Awesome for icons, if needed for cashier UI -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+          integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* Optional: Custom styles for Cashier Dashboard */
+        .menu-item-card {
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .menu-item-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.1);
+        }
+        .order-item-list .list-group-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .order-summary {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+        .receipt-modal-body {
+            font-family: monospace;
+            white-space: pre;
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 0.25rem;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+    </style>
 </head>
-<body>
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between">
-            <h2>🧾 Cashier Dashboard</h2>
-            <a href="/" class="btn btn-secondary">Logout</a>
+<body class="bg-light">
+    <div class="container-fluid py-3">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="fw-bold text-primary mb-0"> Cashier</h1>
+            <a href="/" class="btn btn-outline-secondary">Logout</a>
         </div>
-        
-        <!-- Menu Grid -->
-        <div id="menu-items" class="row mb-4"></div>
-        
-        <!-- Current Order -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between">
-                Current Order <span id="item-count">(0 items)</span>
-            </div>
-            <div class="card-body">
-                <div id="order-items" class="mb-3"></div>
-                <div class="d-flex justify-content-between">
-                    <h4>Total: $<span id="order-total">0.00</span></h4>
-                    <button id="place-order" class="btn btn-success" disabled>Place Order</button>
+
+        <div class="row">
+            <!-- Menu Section -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white fw-bold">Menu Items</div>
+                    <div class="card-body">
+                        <div id="menu-items-container" class="row">
+                            <!-- Menu items will be loaded here by JavaScript -->
+                            <div class="col-12 text-center text-muted p-5">Loading menu...</div>
+                        </div>
+                    </div>
                 </div>
-                <button id="clear-order" class="btn btn-outline-danger mt-2">Clear Order</button>
+            </div>
+
+            <!-- Current Order Section -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">Current Order</span>
+                        <span class="badge bg-primary" id="item-count">(0 items)</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="order-items-list" class="list-group list-group-flush mb-3 order-item-list">
+                            <!-- Order items will be loaded here by JavaScript -->
+                            <div class="list-group-item text-muted text-center" id="empty-order-message">
+                                No items in order.
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center border-top pt-3 mt-3">
+                            <span class="order-summary">Total:</span>
+                            <span class="order-summary">$<span id="order-total">0.00</span></span>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-3">
+                            <button id="place-order-btn" class="btn btn-success btn-lg" disabled>
+                                Place Order
+                            </button>
+                            <button id="clear-order-btn" class="btn btn-outline-danger">
+                                Clear Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div class="modal fade" id="receiptModal" tabindex="-1" aria-labelledby="receiptModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="receiptModalLabel">Order Receipt <span id="receiptOrderNumber"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <pre class="receipt-modal-body" id="receipt-content"></pre>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <!-- <button type="button" class="btn btn-primary">Print Receipt</button> -->
+                </div>
             </div>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        let currentOrder = [];
-        let menu = [];
-
-        // Load menu
-        fetch('/api/menu')
-            .then(r => r.json())
-            .then(data => {
-                menu = data;
-                displayMenu();
-            });
-
-        function displayMenu() {
-            const container = document.getElementById('menu-items');
-            menu.forEach(item => {
-                const col = document.createElement('div');
-                col.className = 'col-md-3 mb-3';
-                col.innerHTML = `
-                    <div class="card h-100">
-                        <div class="card-body text-center">
-                            <h5>${item.name}</h5>
-                            <h6>$${item.price}</h6>
-                            <button class="btn btn-primary w-100" onclick="addToOrder(${item.id})">
-                                Add to Order
-                            </button>
-                        </div>
-                    </div>`;
-                container.appendChild(col);
-            });
-        }
-
-        function addToOrder(itemId) {
-            const item = menu.find(m => m.id === itemId);
-            currentOrder.push({...item, quantity: 1});
-            updateOrderDisplay();
-        }
-
-        function updateOrderDisplay() {
-            const container = document.getElementById('order-items');
-            const totalEl = document.getElementById('order-total');
-            const countEl = document.getElementById('item-count');
-            const placeBtn = document.getElementById('place-order');
-
-            container.innerHTML = currentOrder.map((item, index) => `
-                <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
-                    <span>${item.name} x${item.quantity}</span>
-                    <span>$${item.price}</span>
-                    <button class="btn btn-sm btn-outline-danger" onclick="removeFromOrder(${index})">Remove</button>
-                </div>
-            `).join('');
-
-            const total = currentOrder.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            totalEl.textContent = total.toFixed(2);
-            countEl.textContent = `(${currentOrder.length} items)`;
-            placeBtn.disabled = currentOrder.length === 0;
-        }
-
-        document.getElementById('place-order').onclick = () => {
-            const orderData = {
-                items: currentOrder,
-                total: currentOrder.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-            };
-            
-            socket.emit('placeOrder', orderData);
-        };
-
-        document.getElementById('clear-order').onclick = () => {
-            currentOrder = [];
-            updateOrderDisplay();
-        };
-
-        function removeFromOrder(index) {
-            currentOrder.splice(index, 1);
-            updateOrderDisplay();
-        }
-
-        socket.on('orderPlaced', (data) => {
-            alert(`✅ Order ${data.orderNumber} placed successfully!`);
-            currentOrder = [];
-            updateOrderDisplay();
-        });
-
-        socket.on('orderError', (msg) => {
-            alert('❌ ' + msg);
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../js/cashier/dashboard.js"></script>
 </body>
-</html>
+</html
