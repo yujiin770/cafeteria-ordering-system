@@ -62,144 +62,95 @@
         </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-        let orders = [];
-        let orderCounts = { pending: 0, preparing: 0, completed: 0 };
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    let orders = [];
+    let orderCounts = { pending: 0, preparing: 0, completed: 0 };
 
-        // Connect to kitchen room
+    // 🔥 CRITICAL: Wait for connection BEFORE joining room
+    socket.on('connect', () => {
+        console.log('✅ Kitchen CONNECTED');
+        // Join kitchen room AFTER connection
         socket.emit('joinRoom', 'kitchen');
-        console.log('🔥 Kitchen connected to server');
+        console.log('🔥 Kitchen joined room');
+    });
 
-        // Listen for new orders
-        socket.on('newOrder', (order) => {
-            console.log('🍽️ New order received:', order.orderNumber);
-            addOrder(order);
-        });
+    // 🔥 DEBUG: See ALL events
+    socket.onAny((event, ...args) => {
+        console.log('📡 Kitchen received event:', event, args);
+    });
 
-        // Listen for status updates
-        socket.on('orderStatusUpdate', (data) => {
-            console.log('🔄 Status update:', data);
-            updateOrderStatus(data.orderNumber, data.status);
-        });
+    socket.on('newOrder', (order) => {
+        console.log('🍽️ NEW ORDER:', order.orderNumber);
+        addOrder(order);
+    });
 
-        // Add order to display
-        function addOrder(order) {
-            // Parse items if it's a JSON string from DB
-            const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-            
-            orders.unshift({
-                ...order,
-                items: items,
-                id: order.id || Date.now() // Fallback ID
-            });
-            
+    socket.on('orderStatusUpdate', (data) => {
+        console.log('🔄 Status update:', data);
+        updateOrderStatus(data.orderNumber, data.status);
+    });
+
+    // 🔥 Remove loading spinner after 3 seconds
+    setTimeout(() => {
+        const container = document.getElementById('orders-container');
+        container.innerHTML = `
+            <div class="col-12 text-center p-5">
+                <div class="display-4 text-success">🎉</div>
+                <h4 class="text-success mt-3">Ready for Orders!</h4>
+                <p class="text-muted">Cashier will send orders here...</p>
+            </div>
+        `;
+    }, 3000);
+
+    // ... rest of your functions (addOrder, updateDisplay, etc.) stay the same
+    function addOrder(order) {
+        const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+        orders.unshift({...order, items: items, id: order.id || Date.now()});
+        updateDisplay();
+        updateCounts();
+    }
+
+    function updateOrderStatus(orderNumber, status) {
+        const order = orders.find(o => o.orderNumber === orderNumber);
+        if (order) {
+            order.status = status;
             updateDisplay();
             updateCounts();
         }
+    }
 
-        // Update order status
-        function updateOrderStatus(orderNumber, status) {
-            const order = orders.find(o => o.orderNumber === orderNumber);
-            if (order) {
-                order.status = status;
-                updateDisplay();
-                updateCounts();
-            }
+    function updateDisplay() {
+        const container = document.getElementById('orders-container');
+        if (orders.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center p-5">
+                    <div class="display-4 text-muted">🎉</div>
+                    <h4 class="text-muted mt-3">No orders yet!</h4>
+                    <p class="text-muted">Ready for incoming orders...</p>
+                </div>
+            `;
+            return;
         }
+        // ... your existing updateDisplay code
+    }
 
-        // Update full display
-        function updateDisplay() {
-            const container = document.getElementById('orders-container');
-            
-            if (orders.length === 0) {
-                container.innerHTML = `
-                    <div class="col-12 text-center p-5">
-                        <div class="display-4 text-muted">🎉</div>
-                        <h4 class="text-muted mt-3">No orders yet!</h4>
-                        <p class="text-muted">Ready for incoming orders...</p>
-                    </div>
-                `;
-                return;
-            }
+    function updateCounts() {
+        orderCounts = orders.reduce((counts, order) => {
+            counts[order.status]++;
+            return counts;
+        }, { pending: 0, preparing: 0, expected: 0 });
+        
+        document.getElementById('pending-count').textContent = orderCounts.pending;
+        document.getElementById('preparing-count').textContent = orderCounts.preparing;
+        document.getElementById('completed-count').textContent = orderCounts.completed;
+    }
 
-            container.innerHTML = orders.map(order => {
-                const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
-                const totalItems = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
-                
-                return `
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <div class="card order-card h-100 ${order.status}">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong class="h5 mb-0">#${order.orderNumber}</strong>
-                                    <br><small class="text-muted">${new Date(order.timestamp).toLocaleString()}</small>
-                                </div>
-                                <span class="badge fs-6 ${
-                                    order.status === 'pending' ? 'bg-warning' : 
-                                    order.status === 'preparing' ? 'bg-info' : 'bg-success'
-                                }">${order.status.toUpperCase()}</span>
-                            </div>
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    ${items.map(item => `
-                                        <div class="d-flex justify-content-between mb-2">
-                                            <span>${item.name} ×${item.quantity || 1}</span>
-                                            <span>$${item.price.toFixed(2)}</span>
-                                        </div>
-                                    `).join('')}
-                                    <hr>
-                                    <div class="d-flex justify-content-between fw-bold fs-5">
-                                        <span>Total:</span>
-                                        <span>$${parseFloat(order.total).toFixed(2)}</span>
-                                    </div>
-                                </div>
-                                
-                                ${order.status === 'pending' ? `
-                                    <button class="btn btn-warning w-100 mb-2" onclick="updateStatus('${order.orderNumber}', 'preparing')">
-                                        👨‍🍳 Start Preparing
-                                    </button>
-                                ` : ''}
-                                
-                                ${order.status === 'preparing' ? `
-                                    <button class="btn btn-success w-100" onclick="updateStatus('${order.orderNumber}', 'completed')">
-                                        ✅ Mark as Completed
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
+    function updateStatus(orderNumber, status) {
+        console.log(`🔧 Updating ${orderNumber} to ${status}`);
+        socket.emit('updateOrderStatus', { orderNumber, status });
+    }
+</script>
 
-        // Update status counts
-        function updateCounts() {
-            orderCounts = orders.reduce((counts, order) => {
-                counts[order.status]++;
-                return counts;
-            }, { pending: 0, preparing: 0, completed: 0 });
-            
-            document.getElementById('pending-count').textContent = orderCounts.pending;
-            document.getElementById('preparing-count').textContent = orderCounts.preparing;
-            document.getElementById('completed-count').textContent = orderCounts.completed;
-        }
-
-        // Update status function (global for onclick)
-        function updateStatus(orderNumber, status) {
-            console.log(`🔧 Updating ${orderNumber} to ${status}`);
-            socket.emit('updateOrderStatus', { orderNumber, status });
-        }
-
-        // Connection status
-        socket.on('connect', () => {
-            console.log('✅ Socket connected!');
-        });
-
-        socket.on('disconnect', () => {
-            console.log('❌ Socket disconnected!');
-        });
-    </script>
 </body>
 </html>
