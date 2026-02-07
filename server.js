@@ -53,30 +53,63 @@ app.get('/api/menu', (req, res) => {
     });
 });
 
+app.get('/api/orders', (req, res) => {
+    db.query('SELECT * FROM orders ORDER BY timestamp DESC', (err, results) => {
+        if (err) {
+            console.error('Orders query error:', err);
+            return res.status(500).json({error: 'Database error'});
+        }
+        const parsedResults = results.map(order => ({
+            ...order,
+            items: JSON.parse(order.items)
+        }));
+        res.json(parsedResults);
+    });
+});
+
+// NEW: API endpoint to fetch order history
+app.get('/api/order-history', (req, res) => {
+    // For order history, we typically want all orders, perhaps with filtering
+    // In this example, the client-side filters after fetching all.
+    // For large datasets, you'd add status/search params here for server-side filtering.
+    db.query('SELECT * FROM orders ORDER BY timestamp DESC', (err, results) => {
+        if (err) {
+            console.error('Order history query error:', err);
+            return res.status(500).json({error: 'Database error'});
+        }
+        const parsedResults = results.map(order => ({
+            ...order,
+            items: JSON.parse(order.items)
+        }));
+        res.json(parsedResults);
+    });
+});
+
+
 // Authentication
 app.post('/auth/login', (req, res) => {
     const { username, password } = req.body;
     console.log('🔐 Login attempt:', username);
-    
+
     db.query('SELECT * FROM users WHERE username = ?', [username], (err, results) => {
         if (err || results.length === 0) {
             console.log('❌ User not found:', username);
             return res.json({success: false, message: 'Invalid credentials'});
         }
-        
+
         const user = results[0];
         bcrypt.compare(password, user.password, (err, isMatch) => {
             if (err || !isMatch) {
                 console.log('❌ Password mismatch:', username);
                 return res.json({success: false, message: 'Invalid credentials'});
             }
-            
+
             console.log(`✅ ${user.role} logged in: ${username}`);
             res.json({
-                success: true, 
+                success: true,
                 user: {
-                    id: user.id, 
-                    username: user.username, 
+                    id: user.id,
+                    username: user.username,
                     role: user.role
                 }
             });
@@ -87,22 +120,22 @@ app.post('/auth/login', (req, res) => {
 // WebSocket Connection
 io.on('connection', (socket) => {
     console.log('👤 User connected:', socket.id);
-    
+
     // Join room based on role
     socket.on('joinRoom', (role) => {
         socket.join(role);
         console.log(`📱 ${socket.id} joined ${role} room`);
     });
-    
+
     // Cashier places order
     socket.on('placeOrder', (orderData) => {
         console.log('🧾 New order from:', socket.id);
         console.log('📦 Order data:', JSON.stringify(orderData, null, 2));
-        
+
         const orderNumber = 'ORD' + Date.now();
         const total = parseFloat(orderData.total) || 0;
         const itemsJson = JSON.stringify(orderData.items || []);
-        
+
         const order = {
             items: itemsJson,
             total: total,
@@ -110,44 +143,44 @@ io.on('connection', (socket) => {
             status: 'pending',
             timestamp: new Date()
         };
-        
+
         console.log('💾 Saving order:', orderNumber);
-        
+
         const sql = 'INSERT INTO orders (items, total, orderNumber, status, timestamp) VALUES (?, ?, ?, ?, ?)';
         const values = [order.items, order.total, order.orderNumber, order.status, order.timestamp];
-        
+
         db.query(sql, values, (err, result) => {
             if (err) {
                 console.error('❌ Order save ERROR:', err.sqlMessage);
                 console.error('❌ Full error:', err);
                 return socket.emit('orderError', 'Database error: ' + err.sqlMessage);
             }
-            
+
             console.log(`✅ Order ${orderNumber} SAVED! ID: ${result.insertId}`);
-            
-            // 🔥 Send to ALL clients (kitchen, admin, cashier)
-            const broadcastOrder = { 
-                ...order, 
-                items: orderData.items // Original objects for display
+
+            const broadcastOrder = {
+                ...order,
+                id: result.insertId,
+                items: orderData.items
             };
-            
+
             io.emit('newOrder', broadcastOrder);
             socket.emit('orderPlaced', {orderNumber});
         });
     });
-    
+
     // Kitchen updates status
     socket.on('updateOrderStatus', (data) => {
         console.log('🔄 Status update:', data.orderNumber, '→', data.status);
-        
-        db.query('UPDATE orders SET status = ? WHERE orderNumber = ?', 
+
+        db.query('UPDATE orders SET status = ? WHERE orderNumber = ?',
             [data.status, data.orderNumber],
             (err, result) => {
                 if (err) {
                     console.error('❌ Status update error:', err);
                     return socket.emit('statusError', err.message);
                 }
-                
+
                 if (result.affectedRows > 0) {
                     console.log(`✅ Status updated: ${data.orderNumber} → ${data.status}`);
                     io.emit('orderStatusUpdate', data);
@@ -157,7 +190,7 @@ io.on('connection', (socket) => {
             }
         );
     });
-    
+
     socket.on('disconnect', () => {
         console.log('👋 User disconnected:', socket.id);
     });

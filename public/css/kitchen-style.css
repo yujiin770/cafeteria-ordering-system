@@ -1,37 +1,73 @@
+/* General layout for the main structure */
 #wrapper {
+    display: flex; /* Still helps manage flex items like the overlay, though sidebar is fixed */
     min-height: 100vh;
+    width: 100%;
 }
 
+body {
+    overflow-x: hidden; /* Prevents horizontal scroll from mobile sidebar transform */
+    background-color: #f8f9fa; /* Ensure body background is light gray */
+}
+
+/* Sidebar Styling - Desktop (Fixed Position) */
 #sidebar-wrapper {
-    min-width: 280px;
-    width: 280px;
-    transition: all 0.3s ease;
-    z-index: 1000;
+    position: fixed; /* Makes the sidebar stay in place during scroll */
+    top: 0;
+    left: 0;
+    height: 100vh; /* Ensures it takes full viewport height */
+    width: 280px; /* Default expanded width */
+    z-index: 1000; /* Stays on top */
+    background-color: #343a40; /* Dark background */
+    color: white;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1); /* Subtle shadow */
+    transition: all 0.3s ease; /* Smooth transitions for width */
+    overflow-y: auto; /* Allows sidebar content to scroll if it exceeds height */
 }
 
 #sidebar-wrapper.collapsed {
-    width: 80px;
-    min-width: 80px;
+    width: 80px; /* Collapsed width */
 }
 
 #sidebar-wrapper .sidebar-heading {
     border-bottom: 1px solid rgba(255,255,255,0.1);
+    background-color: #0d6efd;
+    color: white;
+    font-size: 1.25rem;
+    font-weight: bold;
+    padding: 1rem 1.5rem; /* Ensure consistent padding */
 }
 
 #sidebar-wrapper .list-group-item {
     border: none;
     padding: 1rem 1.5rem;
     transition: all 0.2s;
+    color: rgba(255,255,255,0.7);
+    display: flex;
+    align-items: center;
+}
+
+#sidebar-wrapper .list-group-item i {
+    font-size: 1.1rem;
+    width: 25px;
+    text-align: center;
+    margin-right: 15px;
+}
+
+#sidebar-wrapper .list-group-item span {
+    flex-grow: 1;
 }
 
 #sidebar-wrapper .list-group-item:hover {
     background-color: rgba(255,255,255,0.1) !important;
     transform: translateX(5px);
+    color: white;
 }
 
 #sidebar-wrapper .list-group-item.active {
     background-color: rgba(13,110,253,0.2);
     border-right: 4px solid #0d6efd;
+    color: white;
 }
 
 #sidebar-wrapper.collapsed .list-group-item span {
@@ -42,34 +78,112 @@
     display: none;
 }
 
+#sidebar-wrapper.collapsed .list-group-item i {
+    margin-right: 0;
+    width: auto;
+}
+
+/* Page Content Styling - Desktop (Offset for Fixed Sidebar) */
 #page-content-wrapper {
-    width: calc(100% - 280px);
-    transition: all 0.3s ease;
-    margin-left: 280px;
+    margin-left: 280px; /* Offset for the expanded sidebar */
+    width: calc(100% - 280px); /* Fills remaining width */
+    transition: all 0.3s ease; /* Smooth transition for margin */
 }
 
 #page-content-wrapper.sidebar-collapsed {
-    margin-left: 80px;
+    margin-left: 80px; /* Offset for the collapsed sidebar */
     width: calc(100% - 80px);
 }
 
+#page-content-wrapper .navbar {
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem;
+    background-color: #ffffff; /* Explicitly white for navbar */
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); /* Subtle shadow for navbar */
+}
+
+#page-content-wrapper h1.h3 {
+    margin-bottom: 0;
+    color: #343a40;
+}
+
+/* Order card styles (existing) */
+.order-card {
+    transition: all 0.25s ease;
+    border-left: 6px solid #ffc107;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+}
+.order-pending { border-left-color: #ffc107; }
+.order-preparing { border-left-color: #0dcaf0; }
+.order-completed {
+    border-left-color: #198754;
+    opacity: 0.9;
+}
+
+/* Stats Cards (existing) */
+.card.bg-warning.bg-opacity-10,
+.card.bg-info.bg-opacity-10,
+.card.bg-success.bg-opacity-10 {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.card-body h2 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+}
+.card-body small {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+/* Specific styles for order history table (existing) */
+.table th, .table td {
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.table thead th {
+    background-color: #e9ecef;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.badge.bg-warning { background-color: #ffc107 !important; color: #212529 !important; }
+.badge.bg-info { background-color: #0dcaf0 !important; }
+.badge.bg-success { background-color: #198754 !important; }
+.badge.bg-danger { background-color: #dc3545 !important; }
+.badge.bg-secondary { background-color: #6c757d !important; }
+
+.table-row-status-completed {
+    background-color: #f6fff6;
+}
+
+/* Responsive adjustments for smaller screens (existing) */
 @media (max-width: 992px) {
     #sidebar-wrapper {
         transform: translateX(-100%);
-        position: fixed;
-        height: 100vh;
         z-index: 1050;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.5);
     }
-    
+
     #sidebar-wrapper.active {
         transform: translateX(0);
     }
-    
+
     #page-content-wrapper {
-        margin-left: 0 !important;
-        width: 100% !important;
+        margin-left: 0;
+        width: 100%;
     }
-    
+
+    #page-content-wrapper.sidebar-collapsed {
+        margin-left: 0;
+        width: 100%;
+    }
+
     #sidebar-overlay {
         position: fixed;
         top: 0;
@@ -80,13 +194,12 @@
         z-index: 1040;
         display: none;
     }
-    
+
     #sidebar-overlay.active {
         display: block;
     }
-}
 
-.btn-toggle {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
+    #page-content-wrapper .navbar .h3 {
+        font-size: 1.25rem;
+    }
 }
