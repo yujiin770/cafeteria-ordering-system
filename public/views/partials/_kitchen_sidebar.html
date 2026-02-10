@@ -1,21 +1,29 @@
-<!-- Kitchen Sidebar -->
-<nav class="sidebar bg-dark border-end" id="sidebar-wrapper">
-    <div class="sidebar-heading bg-primary text-white p-3 d-flex align-items-center">
-        <i class="fas fa-fire fs-4 me-2"></i>
-        <span class="fw-bold">Kitchen</span>
-        <button class="btn btn-sm btn-outline-light ms-auto d-lg-none" id="sidebarCollapse">
-            <i class="fas fa-times"></i>
-        </button>
+<!-- KITCHEN SIDEBAR -->
+<div class="kitchen-theme" id="sidebar-wrapper">
+    <div class="sidebar-heading">
+        <i class="fas fa-fire" style="color: var(--kitchen-accent);"></i>
+        <span>Kitchen Panel</span>
     </div>
+
+    <!-- Category: Operations -->
+    <div class="sidebar-category">Operations</div>
+
     <div class="list-group list-group-flush">
-        <a href="dashboard.html" class="list-group-item list-group-item-action bg-transparent text-white">
-            <i class="fas fa-list me-3"></i><span>Live Orders</span>
+        <a href="dashboard.html" class="list-group-item list-group-item-action">
+            <i class="fas fa-tasks"></i>
+            <span>Live Orders</span>
         </a>
-        <a href="orderHistory.html" class="list-group-item list-group-item-action bg-transparent text-white">
-            <i class="fas fa-history me-3"></i><span>Order History</span>
-        </a>
-        <a href="/" class="list-group-item list-group-item-action bg-transparent text-white border-top">
-            <i class="fas fa-sign-out-alt me-3"></i><span>Logout</span>
+        <a href="orderHistory.html" class="list-group-item list-group-item-action">
+            <i class="fas fa-history"></i>
+            <span>Order History</span>
         </a>
     </div>
-</nav>
+
+    <!-- Logout -->
+    <div class="list-group list-group-flush mt-auto mb-3">
+        <a href="/" class="list-group-item list-group-item-action text-danger" onclick="localStorage.removeItem('user')">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </a>
+    </div>
+</div>

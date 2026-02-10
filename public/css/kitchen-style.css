@@ -1,205 +1,289 @@
-/* General layout for the main structure */
-#wrapper {
-    display: flex; /* Still helps manage flex items like the overlay, though sidebar is fixed */
-    min-height: 100vh;
-    width: 100%;
+/* =========================================
+   THEME: Midnight Slate (Kitchen Edition)
+   ========================================= */
+:root {
+    --sidebar-bg: #0f172a;        /* Midnight Slate */
+    --sidebar-text: #94a3b8;      /* Muted Blue-Grey */
+    --sidebar-text-hover: #ffffff;
+    --sidebar-hover-bg: rgba(255, 255, 255, 0.05);
+    
+    /* Backgrounds */
+    --body-bg: #f1f5f9;           /* Light Page Background */
+    --card-bg: #ffffff;
+    
+    /* Kitchen Accents */
+    --kitchen-primary: #10b981;   /* Emerald Green (Main Accent) */
+    --status-pending: #f59e0b;    /* Amber */
+    --status-prep: #0ea5e9;       /* Sky Blue */
+    --status-complete: #10b981;   /* Emerald */
+    --danger: #ef4444;            /* Red */
+    
+    /* Dimensions */
+    --sidebar-width: 260px;
+    --sidebar-collapsed-width: 70px;
 }
 
 body {
-    overflow-x: hidden; /* Prevents horizontal scroll from mobile sidebar transform */
-    background-color: #f8f9fa; /* Ensure body background is light gray */
+    background-color: var(--body-bg);
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    overflow-x: hidden;
 }
 
-/* Sidebar Styling - Desktop (Fixed Position) */
+/* =========================================
+   LAYOUT & SIDEBAR (Aligned with style.css)
+   ========================================= */
+#wrapper {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+}
+
+#page-content-wrapper {
+    width: 100%;
+    min-height: 100vh;
+    transition: all 0.3s ease;
+}
+
+/* Sidebar Base */
 #sidebar-wrapper {
-    position: fixed; /* Makes the sidebar stay in place during scroll */
-    top: 0;
-    left: 0;
-    height: 100vh; /* Ensures it takes full viewport height */
-    width: 280px; /* Default expanded width */
-    z-index: 1000; /* Stays on top */
-    background-color: #343a40; /* Dark background */
-    color: white;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.1); /* Subtle shadow */
-    transition: all 0.3s ease; /* Smooth transitions for width */
-    overflow-y: auto; /* Allows sidebar content to scroll if it exceeds height */
+    min-width: var(--sidebar-width);
+    max-width: var(--sidebar-width);
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    z-index: 1000;
 }
 
-#sidebar-wrapper.collapsed {
-    width: 80px; /* Collapsed width */
-}
-
-#sidebar-wrapper .sidebar-heading {
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    background-color: #0d6efd;
-    color: white;
+/* Sidebar Header */
+.sidebar-heading {
+    padding: 1.25rem 1.5rem;
     font-size: 1.25rem;
-    font-weight: bold;
-    padding: 1rem 1.5rem; /* Ensure consistent padding */
-}
-
-#sidebar-wrapper .list-group-item {
-    border: none;
-    padding: 1rem 1.5rem;
-    transition: all 0.2s;
-    color: rgba(255,255,255,0.7);
+    font-weight: 700;
+    color: #fff;
     display: flex;
     align-items: center;
+    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.sidebar-heading i {
+    min-width: 35px;
+    font-size: 1.3rem;
+    text-align: center;
+}
+
+/* Category Labels */
+.sidebar-category {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    color: #475569;
+    padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+
+/* List Items */
+#sidebar-wrapper .list-group-item {
+    background-color: transparent !important;
+    color: var(--sidebar-text);
+    border: none;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    transition: all 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    cursor: pointer;
 }
 
 #sidebar-wrapper .list-group-item i {
+    min-width: 35px;
     font-size: 1.1rem;
-    width: 25px;
-    text-align: center;
-    margin-right: 15px;
+    text-align: left;
+    margin-right: 0; /* Handled by min-width */
 }
 
-#sidebar-wrapper .list-group-item span {
-    flex-grow: 1;
-}
-
+/* Hover */
 #sidebar-wrapper .list-group-item:hover {
-    background-color: rgba(255,255,255,0.1) !important;
-    transform: translateX(5px);
-    color: white;
+    background-color: var(--sidebar-hover-bg) !important;
+    color: var(--sidebar-text-hover);
+    padding-left: 28px; /* Slide effect */
 }
 
+/* Active State (Emerald Green) */
 #sidebar-wrapper .list-group-item.active {
-    background-color: rgba(13,110,253,0.2);
-    border-right: 4px solid #0d6efd;
-    color: white;
+    background-color: rgba(16, 185, 129, 0.1) !important; /* Green tint */
+    color: #fff !important;
+    border-right: 4px solid var(--kitchen-primary);
+}
+#sidebar-wrapper .list-group-item.active i {
+    color: var(--kitchen-primary);
 }
 
-#sidebar-wrapper.collapsed .list-group-item span {
-    display: none;
+/* Logout */
+.mt-auto { margin-top: auto !important; }
+.text-danger:hover {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    color: var(--danger) !important;
 }
 
-#sidebar-wrapper.collapsed .sidebar-heading span {
-    display: none;
+/* =========================================
+   COLLAPSED STATE LOGIC
+   ========================================= */
+#sidebar-wrapper.collapsed {
+    min-width: var(--sidebar-collapsed-width);
+    max-width: var(--sidebar-collapsed-width);
 }
 
+/* Hide Labels */
+#sidebar-wrapper.collapsed .sidebar-heading span,
+#sidebar-wrapper.collapsed .list-group-item span,
+#sidebar-wrapper.collapsed .sidebar-category {
+    display: none !important;
+}
+
+/* Center Content */
+#sidebar-wrapper.collapsed .sidebar-heading {
+    justify-content: center;
+    padding: 1.25rem 0;
+}
+#sidebar-wrapper.collapsed .list-group-item {
+    justify-content: center;
+    padding: 15px 0;
+}
+#sidebar-wrapper.collapsed .list-group-item:hover {
+    padding-left: 0;
+}
 #sidebar-wrapper.collapsed .list-group-item i {
-    margin-right: 0;
-    width: auto;
+    text-align: center;
 }
 
-/* Page Content Styling - Desktop (Offset for Fixed Sidebar) */
-#page-content-wrapper {
-    margin-left: 280px; /* Offset for the expanded sidebar */
-    width: calc(100% - 280px); /* Fills remaining width */
-    transition: all 0.3s ease; /* Smooth transition for margin */
+/* =========================================
+   KITCHEN SPECIFIC STYLES (Cards & Stats)
+   ========================================= */
+
+/* Navbar Styling */
+.navbar {
+    background-color: var(--card-bg);
+    box-shadow: 0 2px 15px rgba(0,0,0,0.04);
+    padding: 1rem 1.5rem;
 }
 
-#page-content-wrapper.sidebar-collapsed {
-    margin-left: 80px; /* Offset for the collapsed sidebar */
-    width: calc(100% - 80px);
-}
-
-#page-content-wrapper .navbar {
-    border-bottom: 1px solid #dee2e6;
-    padding: 1rem;
-    background-color: #ffffff; /* Explicitly white for navbar */
-    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); /* Subtle shadow for navbar */
-}
-
-#page-content-wrapper h1.h3 {
-    margin-bottom: 0;
-    color: #343a40;
-}
-
-/* Order card styles (existing) */
+/* Order Cards */
 .order-card {
-    transition: all 0.25s ease;
-    border-left: 6px solid #ffc107;
-    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
-}
-.order-pending { border-left-color: #ffc107; }
-.order-preparing { border-left-color: #0dcaf0; }
-.order-completed {
-    border-left-color: #198754;
-    opacity: 0.9;
+    background: var(--card-bg);
+    border: none;
+    border-radius: 8px;
+    border-left: 5px solid #ccc; /* Default */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Stats Cards (existing) */
+.order-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Status Colors for Cards */
+.order-pending { border-left-color: var(--status-pending); }
+.order-preparing { border-left-color: var(--status-prep); }
+.order-completed { border-left-color: var(--status-complete); opacity: 0.8; }
+
+/* Stats Cards */
 .card.bg-warning.bg-opacity-10,
 .card.bg-info.bg-opacity-10,
 .card.bg-success.bg-opacity-10 {
     border: none;
-    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
-    min-height: 100px;
+    border-radius: 12px;
+    min-height: 120px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-}
-.card-body h2 {
-    font-size: 2.5rem;
-    font-weight: bold;
-    margin-bottom: 0.25rem;
-}
-.card-body small {
-    font-size: 0.9rem;
-    color: #6c757d;
+    transition: transform 0.2s;
 }
 
-/* Specific styles for order history table (existing) */
-.table th, .table td {
-    white-space: nowrap;
-    vertical-align: middle;
+.card:hover { transform: translateY(-3px); }
+
+/* Stat Text */
+.card-body h2 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0;
+    color: #1e293b;
+}
+.card-body small {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+}
+
+/* Order History Table */
+.card.shadow-sm {
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 8px;
 }
 
 .table thead th {
-    background-color: #e9ecef;
-    border-bottom: 2px solid #dee2e6;
+    background-color: #f8fafc;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    border-bottom: 2px solid #e2e8f0;
 }
 
-.badge.bg-warning { background-color: #ffc107 !important; color: #212529 !important; }
-.badge.bg-info { background-color: #0dcaf0 !important; }
-.badge.bg-success { background-color: #198754 !important; }
-.badge.bg-danger { background-color: #dc3545 !important; }
-.badge.bg-secondary { background-color: #6c757d !important; }
-
-.table-row-status-completed {
-    background-color: #f6fff6;
+.table td {
+    vertical-align: middle;
+    color: #334155;
 }
 
-/* Responsive adjustments for smaller screens (existing) */
-@media (max-width: 992px) {
+/* Status Badges */
+.badge {
+    padding: 0.5em 0.8em;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+.badge.bg-warning { background-color: #fef3c7 !important; color: #b45309 !important; }
+.badge.bg-info { background-color: #e0f2fe !important; color: #0369a1 !important; }
+.badge.bg-success { background-color: #dcfce7 !important; color: #15803d !important; }
+
+/* =========================================
+   MOBILE RESPONSIVENESS
+   ========================================= */
+@media (max-width: 768px) {
     #sidebar-wrapper {
-        transform: translateX(-100%);
-        z-index: 1050;
-        box-shadow: 2px 0 5px rgba(0,0,0,0.5);
-    }
-
-    #sidebar-wrapper.active {
-        transform: translateX(0);
-    }
-
-    #page-content-wrapper {
-        margin-left: 0;
-        width: 100%;
-    }
-
-    #page-content-wrapper.sidebar-collapsed {
-        margin-left: 0;
-        width: 100%;
-    }
-
-    #sidebar-overlay {
+        margin-left: calc(-1 * var(--sidebar-width));
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        z-index: 1040;
-        display: none;
+        height: 100vh;
+        box-shadow: 5px 0 15px rgba(0,0,0,0.1);
     }
-
+    
+    #sidebar-wrapper.active {
+        margin-left: 0;
+    }
+    
+    #sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background: rgba(0,0,0,0.5);
+        z-index: 999;
+    }
+    
     #sidebar-overlay.active {
         display: block;
     }
-
-    #page-content-wrapper .navbar .h3 {
-        font-size: 1.25rem;
-    }
+    
+    .navbar h1.h3 { font-size: 1.25rem; }
 }

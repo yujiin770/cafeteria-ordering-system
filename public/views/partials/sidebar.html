@@ -1,12 +1,41 @@
-<!-- Sidebar -->
-<div class="bg-dark border-right" id="sidebar-wrapper">
-    <div class="sidebar-heading text-white">Admin Panel</div>
+<!-- Admin Sidebar -->
+<div class="admin-theme" id="sidebar-wrapper">
+    <div class="sidebar-heading">
+        <i class="fas fa-utensils" style="color: var(--admin-accent);"></i>
+        <span>Admin Panel</span>
+    </div>
+
+    <div class="sidebar-category">Main</div>
+
     <div class="list-group list-group-flush">
-        <a href="#" class="list-group-item list-group-item-action bg-dark text-white">Dashboard</a>
-        <a href="#" class="list-group-item list-group-item-action bg-dark text-white">Menu Management</a>
-        <a href="#" class="list-group-item list-group-item-action bg-dark text-white">Inventory</a>
-        <a href="#" class="list-group-item list-group-item-action bg-dark text-white">Sales Reports</a>
-        <a href="#" class="list-group-item list-group-item-action bg-dark text-white">User Management</a>
+        <a href="/views/admin/dashboard.html" class="list-group-item list-group-item-action">
+            <i class="fas fa-th-large"></i><span>Dashboard</span>
+        </a>
+        <a href="/views/admin/menumanagement.html" class="list-group-item list-group-item-action">
+            <i class="fas fa-book-open"></i><span>Menu Items</span>
+        </a>
+        <a href="/views/admin/inventory.html" class="list-group-item list-group-item-action">
+            <i class="fas fa-boxes"></i><span>Inventory</span>
+        </a>
+        <a href="/views/admin/sales.html" class="list-group-item list-group-item-action">
+            <i class="fas fa-chart-line"></i><span>Sales Reports</span>
+        </a>
+    </div>
+
+    <div class="sidebar-category">System</div>
+
+    <div class="list-group list-group-flush">
+        <a href="/views/admin/users.html" class="list-group-item list-group-item-action">
+            <i class="fas fa-users-cog"></i><span>Users</span>
+        </a>
+        <a href="/views/admin/settings.html" class="list-group-item list-group-item-action">
+            <i class="fas fa-cogs"></i><span>Settings</span>
+        </a>
+    </div>
+
+    <div class="list-group list-group-flush mt-auto mb-3">
+        <a href="/" class="list-group-item list-group-item-action text-danger" onclick="localStorage.removeItem('user')">
+            <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+        </a>
     </div>
 </div>
-<!-- /#sidebar-wrapper -->

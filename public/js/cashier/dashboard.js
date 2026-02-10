@@ -19,7 +19,7 @@ const receiptOrderNumberSpan = document.getElementById('receiptOrderNumber');
    1. Initial Setup & Data Fetching
    =========================== */
 
-// Fetch menu items when the page loads
+// Fetch menu items when the page loads or when updated
 async function fetchMenu() {
     try {
         const response = await fetch('/api/menu');
@@ -60,6 +60,7 @@ function displayMenu() {
     });
 
     // Attach click listeners to "Add to Order" buttons
+    // Re-attach listeners every time the menu is displayed to ensure they work for new items
     document.querySelectorAll('.add-to-order-btn').forEach(button => {
         button.addEventListener('click', (event) => {
             const itemId = parseInt(event.target.dataset.itemId);
@@ -149,6 +150,7 @@ function updateOrderDisplay() {
     itemCountBadge.textContent = `(${itemCount} items)`;
 
     // Attach event listeners for +/- buttons in the order list
+    // Re-attach listeners every time the order display is updated
     document.querySelectorAll('.remove-one-btn').forEach(button => {
         button.addEventListener('click', (event) => {
             const itemId = parseInt(event.currentTarget.dataset.itemId);
@@ -256,6 +258,13 @@ function generateReceipt(orderNumber) {
    =========================== */
 
 clearOrderBtn.addEventListener('click', clearOrder);
+
+
+// NEW: Socket.IO listener for menu updates from Admin
+socket.on('menuUpdated', () => {
+    console.log('🔄 Received menuUpdated event. Re-fetching menu...');
+    fetchMenu(); // Re-fetch the menu to get the latest changes
+});
 
 
 // Initialize on page load

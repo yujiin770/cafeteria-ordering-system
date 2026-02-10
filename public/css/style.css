@@ -1,15 +1,118 @@
-/* Basic wrapper and sidebar styles */
-#wrapper {
-    display: flex;
+/* =========================================
+   THEME: Midnight Slate
+   ========================================= */
+:root {
+    --sidebar-bg: #0f172a;        /* Midnight Slate */
+    --sidebar-text: #94a3b8;      /* Muted Text */
+    --sidebar-text-hover: #ffffff;
+    
+    /* ACCENT COLORS */
+    --admin-accent: #38bdf8;      /* Sky Blue (For Admin) */
+    --kitchen-accent: #10b981;    /* Emerald Green (For Kitchen) */
+    
+    --sidebar-width: 260px;
+    --sidebar-collapsed-width: 70px;
 }
 
+body {
+    background-color: #f1f5f9;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    overflow-x: hidden;
+}
+
+/* --- WRAPPER --- */
+#wrapper { display: flex; width: 100%; align-items: stretch; }
+#page-content-wrapper { width: 100%; min-height: 100vh; transition: all 0.3s ease; }
+
+/* --- SIDEBAR BASE --- */
 #sidebar-wrapper {
+    min-width: var(--sidebar-width);
+    max-width: var(--sidebar-width);
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
     min-height: 100vh;
-    width: 250px;
-    transition: margin .25s ease-out;
+    z-index: 1000;
 }
 
-#page-content-wrapper {
-    min-width: 100vw;
-    width: 100%;
+/* Header */
+.sidebar-heading {
+    padding: 1.25rem 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.sidebar-heading i { min-width: 35px; text-align: center; }
+
+/* Category Labels */
+.sidebar-category {
+    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px;
+    font-weight: 700; color: #475569; padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+}
+
+/* --- LIST ITEMS --- */
+#sidebar-wrapper .list-group-item {
+    background-color: transparent !important;
+    color: var(--sidebar-text);
+    border: none;
+    padding: 12px 24px;
+    display: flex; align-items: center;
+    font-weight: 500; transition: all 0.2s;
+    border-right: 5px solid transparent; /* Placeholder for the indicator */
+}
+
+#sidebar-wrapper .list-group-item i {
+    min-width: 35px; text-align: left; font-size: 1.1rem;
+}
+
+/* Hover */
+#sidebar-wrapper .list-group-item:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #fff;
+    padding-left: 28px; /* Slide effect */
+}
+
+/* =========================================
+   THE INDICATOR (WHERE ARE YOU?)
+   ========================================= */
+
+/* 1. ADMIN THEME (BLUE) */
+.admin-theme .list-group-item.active {
+    background-color: rgba(56, 189, 248, 0.15) !important; /* Blue Tint */
+    border-right-color: var(--admin-accent) !important;    /* THE BLUE INDICATOR */
+    color: #fff !important;
+}
+.admin-theme .list-group-item.active i { color: var(--admin-accent) !important; }
+
+/* 2. KITCHEN THEME (GREEN) */
+.kitchen-theme .list-group-item.active {
+    background-color: rgba(16, 185, 129, 0.15) !important; /* Green Tint */
+    border-right-color: var(--kitchen-accent) !important;  /* THE GREEN INDICATOR */
+    color: #fff !important;
+}
+.kitchen-theme .list-group-item.active i { color: var(--kitchen-accent) !important; }
+
+
+/* --- COLLAPSED LOGIC --- */
+#sidebar-wrapper.collapsed { min-width: 70px; max-width: 70px; }
+#sidebar-wrapper.collapsed .sidebar-heading span,
+#sidebar-wrapper.collapsed .list-group-item span,
+#sidebar-wrapper.collapsed .sidebar-category { display: none !important; }
+#sidebar-wrapper.collapsed .sidebar-heading { justify-content: center; padding: 1.25rem 0; }
+#sidebar-wrapper.collapsed .list-group-item { justify-content: center; padding: 15px 0; }
+#sidebar-wrapper.collapsed .list-group-item:hover { padding-left: 0; }
+#sidebar-wrapper.collapsed .list-group-item i { text-align: center; }
+
+/* Mobile */
+@media (max-width: 768px) {
+    #sidebar-wrapper { margin-left: -260px; position: fixed; height: 100vh; }
+    #sidebar-wrapper.active { margin-left: 0; }
+    #sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
+    #sidebar-overlay.active { display: block; }
 }

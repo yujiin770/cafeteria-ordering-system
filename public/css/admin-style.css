@@ -1,0 +1,300 @@
+/* General Admin Dashboard Layout Overrides */
+/* Ensure the main wrapper is a flex container that spans the full height */
+#wrapper {
+    display: flex; /* Helps manage flex items like the overlay */
+    min-height: 100vh;
+    width: 100%;
+}
+
+body {
+    overflow-x: hidden; /* Prevents horizontal scroll from mobile sidebar transform */
+    background-color: #f8f9fa; /* Ensure body background is light gray */
+}
+
+
+/* Admin Sidebar Styling - Desktop (Fixed Position) */
+#sidebar-wrapper {
+    position: fixed; /* Makes the sidebar stay in place during scroll */
+    top: 0;
+    left: 0;
+    height: 100vh; /* Ensures it takes full viewport height */
+    width: 280px; /* Default expanded width */
+    z-index: 1000; /* Stays on top */
+    background-color: #343a40; /* Dark background */
+    color: white;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.2); /* Stronger subtle shadow for depth */
+    transition: all 0.3s ease; /* Smooth transitions for width */
+    overflow-y: auto; /* Allows sidebar content to scroll if it exceeds height */
+}
+
+#sidebar-wrapper.collapsed {
+    width: 80px; /* Collapsed width */
+}
+
+#sidebar-wrapper .sidebar-heading {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    background-color: #0d6efd; /* Primary blue for admin header */
+    color: white;
+    font-size: 1.25rem; /* Standard heading size */
+    font-weight: bold;
+    padding: 1.25rem 1rem; /* Adjusted padding to prevent text cutoff */
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between icon and text */
+}
+/* Ensure the icon for Admin Panel is visible even if text is cut */
+#sidebar-wrapper .sidebar-heading i {
+    flex-shrink: 0; /* Prevent icon from shrinking */
+}
+
+#sidebar-wrapper .list-group-item {
+    border: none;
+    padding: 1rem 1.5rem;
+    transition: all 0.2s;
+    color: rgba(255,255,255,0.7);
+    display: flex; /* Use flex for icon and text alignment */
+    align-items: center;
+    gap: 15px; /* Space between icon and text */
+}
+
+#sidebar-wrapper .list-group-item i {
+    font-size: 1.1rem;
+    width: 25px; /* Fixed width for icons to align text vertically */
+    text-align: center;
+    flex-shrink: 0; /* Prevent icons from shrinking */
+}
+
+#sidebar-wrapper .list-group-item span {
+    flex-grow: 1; /* Allow text to grow */
+    white-space: nowrap; /* Prevent text wrapping */
+    overflow: hidden; /* Hide overflow if text is too long */
+    text-overflow: ellipsis; /* Add ellipsis if text overflows */
+}
+
+#sidebar-wrapper .list-group-item:hover {
+    background-color: rgba(255,255,255,0.1) !important;
+    transform: translateX(5px); /* Slight hover effect */
+    color: white;
+}
+
+#sidebar-wrapper .list-group-item.active {
+    background-color: rgba(13,110,253,0.2);
+    border-right: 4px solid #0d6efd;
+    color: white;
+}
+
+/* Collapsed Sidebar Adjustments */
+#sidebar-wrapper.collapsed .list-group-item span,
+#sidebar-wrapper.collapsed .sidebar-heading span {
+    display: none; /* Hide text when collapsed */
+}
+
+#sidebar-wrapper.collapsed .list-group-item i {
+    margin-right: 0; /* No margin when text is hidden */
+    width: auto; /* Auto width for centered icon */
+}
+
+#sidebar-wrapper.collapsed .sidebar-heading i {
+    margin: 0 auto; /* Center the icon in the heading when collapsed */
+    padding: 0;
+}
+
+
+/* Page Content Styling - Desktop (Offset for Fixed Sidebar) */
+#page-content-wrapper {
+    margin-left: 280px; /* Offset for the expanded sidebar */
+    width: calc(100% - 280px); /* Fills remaining width */
+    transition: all 0.3s ease; /* Smooth transition for margin and width */
+    min-width: 0; /* Allow content to shrink below its natural width */
+}
+
+#page-content-wrapper.sidebar-collapsed {
+    margin-left: 80px; /* Offset for the collapsed sidebar */
+    width: calc(100% - 80px);
+}
+
+/* Navbar specific to page-content-wrapper */
+#page-content-wrapper .navbar {
+    background-color: #ffffff; /* Explicitly white for navbar */
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); /* Subtle shadow for navbar */
+    position: sticky; /* Make navbar sticky for larger content */
+    top: 0;
+    z-index: 999; /* Below sidebar, above page content */
+}
+
+#page-content-wrapper .navbar .h3 {
+    margin-bottom: 0;
+    color: #343a40;
+    font-size: 1.5rem; /* Adjusted title size */
+    margin-left: 1rem; /* Space from toggle button */
+}
+
+/* Dashboard Cards - Ensure proper spacing and responsiveness within columns */
+.row.mb-4 > [class*="col-"] {
+    padding-left: 0.75rem; /* Adjust padding for cards in columns */
+    padding-right: 0.75rem;
+}
+.row.mb-4 {
+    margin-left: -0.75rem; /* Compensate for column padding */
+    margin-right: -0.75rem;
+}
+
+.card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    height: 100%; /* Ensure all cards in a row have equal height */
+}
+
+.card-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid #e9ecef;
+    padding: 1rem 1.25rem;
+    font-size: 1.1rem;
+}
+
+/* Specific colors for dashboard analytics cards */
+.card.bg-primary { background-color: #0d6efd !important; }
+.card.bg-success { background-color: #198754 !important; }
+.card.bg-warning { background-color: #ffc107 !important; color: #212529 !important; } /* Added dark text for warning */
+.card.bg-info { background-color: #0dcaf0 !important; }
+
+/* Dashboard card content */
+.card .h4 {
+    font-size: 1.75rem;
+    font-weight: bold;
+    word-break: break-all; /* Allow text to break for very long numbers */
+}
+.card .h6 {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.7); /* Lighter text for card subtitles */
+}
+
+/* Icons within summary cards */
+.card i.fa-2x {
+    opacity: 0.5; /* Slightly muted icon */
+    flex-shrink: 0; /* Prevent icon from shrinking on small card */
+}
+
+/* Chart */
+#salesChart {
+    max-height: 300px; /* Limit chart height for better aesthetics */
+    width: 100% !important; /* Ensure chart takes full width */
+    min-height: 150px; /* Ensure chart has a minimum height even with no data */
+}
+
+/* List groups for Top Selling Items / Recent Activity */
+.list-group-item {
+    border-color: #e9ecef; /* Light border for list items */
+}
+.list-group-item:first-child { border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; }
+.list-group-item:last-child { border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
+
+
+/* Table styles for management pages (existing) */
+.table-responsive {
+    overflow-x: auto;
+}
+.table th, .table td {
+    vertical-align: middle;
+}
+.table thead th {
+    background-color: #e9ecef;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: bold;
+}
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0,0,0,.02);
+}
+
+/* Form controls in management pages (existing) */
+.form-control, .form-select {
+    border-radius: 0.3rem;
+}
+.btn {
+    border-radius: 0.3rem;
+}
+
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 1200px) { /* Adjust for larger desktops/laptops if needed */
+    #page-content-wrapper .navbar .h3 {
+        font-size: 1.3rem; /* Slightly smaller title on slightly smaller desktops */
+    }
+}
+
+@media (max-width: 992px) { /* Tablet and smaller desktops */
+    #sidebar-wrapper {
+        transform: translateX(-100%); /* Hide sidebar off-screen initially */
+        box-shadow: 2px 0 5px rgba(0,0,0,0.5); /* Stronger shadow for mobile slide-out */
+    }
+
+    #sidebar-wrapper.active {
+        transform: translateX(0); /* Bring sidebar into view */
+    }
+
+    #page-content-wrapper {
+        margin-left: 0; /* No margin offset on mobile */
+        width: 100%; /* Content takes full width */
+    }
+
+    #page-content-wrapper.sidebar-collapsed { /* This class is now primarily for desktop toggle */
+        margin-left: 0;
+        width: 100%;
+    }
+
+    #sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1040; /* Below sidebar, above content */
+        display: none;
+    }
+
+    #sidebar-overlay.active {
+        display: block;
+    }
+
+    #page-content-wrapper .navbar .h3 {
+        font-size: 1.25rem; /* Smaller title on mobile */
+        margin-left: 0.5rem; /* Slightly less space */
+    }
+
+    /* Hide desktop toggle button on mobile */
+    #page-content-wrapper .navbar #sidebarToggle {
+        display: none !important;
+    }
+    /* Show mobile toggle button on mobile */
+    #page-content-wrapper .navbar #sidebarCollapseMobile {
+        display: block !important;
+    }
+
+    /* Adjust cards for smaller tablet views if they become too narrow */
+    .row.mb-4 > .col-md-3 {
+        flex: 0 0 50%; /* Make cards take 50% width (2 per row) */
+        max-width: 50%;
+    }
+    .row > .col-md-6 { /* For top selling/recent activity */
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 767px) { /* Mobile devices */
+    .row.mb-4 > .col-md-3 {
+        flex: 0 0 100%; /* Make cards take full width (1 per row) */
+        max-width: 100%;
+    }
+    #page-content-wrapper .container-fluid {
+        padding-left: 0.75rem; /* Slightly reduce overall padding for very small screens */
+        padding-right: 0.75rem;
+    }
+    .card .h4 {
+        font-size: 1.5rem; /* Smaller numbers on very small screens */
+    }
+}

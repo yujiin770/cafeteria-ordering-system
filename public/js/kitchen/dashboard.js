@@ -199,3 +199,28 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     fetchOrders();
 });
+
+// Add this to public/js/kitchen/dashboard.js AND public/js/admin/dashboard.js
+document.addEventListener("DOMContentLoaded", () => {
+    const toggle = document.getElementById("sidebarToggle");
+    const mobileToggle = document.getElementById("sidebarCollapseMobile");
+    const wrapper = document.getElementById("sidebar-wrapper");
+    const overlay = document.getElementById("sidebar-overlay");
+
+    if (toggle && wrapper) {
+        toggle.addEventListener("click", () => {
+            wrapper.classList.toggle("collapsed");
+        });
+    }
+
+    if (mobileToggle && wrapper && overlay) {
+        mobileToggle.addEventListener("click", () => {
+            wrapper.classList.toggle("active");
+            overlay.classList.toggle("active");
+        });
+        overlay.addEventListener("click", () => {
+            wrapper.classList.remove("active");
+            overlay.classList.remove("active");
+        });
+    }
+});
