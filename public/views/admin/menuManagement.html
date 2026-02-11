@@ -72,10 +72,10 @@
 
     <!-- Menu Item Modal (Add/Edit) -->
     <div class="modal fade" id="menuItemModal" tabindex="-1" aria-labelledby="menuItemModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg"> <!-- Changed to modal-lg for more space -->
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="menuItemModalLabel">Add New Menu Item</h5>
+                    <h5 class="modal-title" id="menuItemModalLabel">Menu Item Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -89,8 +89,66 @@
                             <label for="itemPrice" class="form-label">Price</label>
                             <input type="number" step="0.01" class="form-control" id="itemPrice" required>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100" id="saveMenuItemBtn">Save Item</button>
+                        <button type="submit" class="btn btn-primary w-100" id="saveMenuItemBtn">Save Item Details</button>
                     </form>
+
+                    <hr class="my-4">
+
+                    <!-- Recipe Ingredients Section -->
+                    <div id="recipe-ingredients-section" style="display: none;">
+                        <h5 class="mb-3">Recipe Ingredients for <span class="text-primary" id="currentMenuItemName"></span></h5>
+
+                        <!-- Add New Ingredient Form -->
+                        <div class="card mb-3 bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">Add / Edit Ingredient</h6>
+                                <form id="ingredientForm" class="row g-3">
+                                    <input type="hidden" id="recipeIngredientId">
+                                    <div class="col-md-5">
+                                        <label for="ingredientSelect" class="form-label visually-hidden">Select Inventory Item</label>
+                                        <select class="form-select" id="ingredientSelect" required>
+                                            <option value="">Select an inventory item...</option>
+                                            <!-- Inventory items will be loaded here -->
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="ingredientQuantityInput" class="form-label visually-hidden">Quantity Needed</label>
+                                        <input type="number" step="0.01" min="0" class="form-control" id="ingredientQuantityInput" placeholder="Quantity" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="ingredientUnitInput" class="form-label visually-hidden">Unit Needed</label>
+                                        <input type="text" class="form-control" id="ingredientUnitInput" placeholder="Unit (e.g., grams)" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="submit" class="btn btn-success w-100" id="addUpdateIngredientBtn">Add</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Existing Ingredients Table -->
+                        <div class="table-responsive mt-3">
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Inventory Item</th>
+                                        <th>Quantity Needed</th>
+                                        <th>Unit</th>
+                                        <th>Current Stock</th> <!-- NEW COLUMN -->
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="menuItemIngredientsTableBody">
+                                    <!-- MODIFIED: colspan updated to 5 -->
+                                    <tr><td colspan="5" class="text-center text-muted p-3">No ingredients added yet.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="noIngredientsMessage" class="text-center text-muted p-4" style="display: none;">
+                            No ingredients found for this menu item.
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>

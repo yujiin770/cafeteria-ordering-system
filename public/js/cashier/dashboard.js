@@ -50,7 +50,7 @@ function displayMenu() {
             <div class="card h-100 menu-item-card shadow-sm" data-item-id="${item.id}">
                 <div class="card-body text-center d-flex flex-column justify-content-between">
                     <h5 class="card-title mb-1">${item.name}</h5>
-                    <p class="card-text text-muted">$${parseFloat(item.price).toFixed(2)}</p>
+                    <p class="card-text text-muted">₱${parseFloat(item.price).toFixed(2)}</p>
                     <button class="btn btn-primary btn-sm mt-2 add-to-order-btn" data-item-id="${item.id}">
                         Add to Order
                     </button>
@@ -109,7 +109,6 @@ function clearOrder() {
     updateOrderDisplay();
 }
 
-// Update the display of the current order list, total, and item count
 function updateOrderDisplay() {
     orderItemsList.innerHTML = '';
     let total = 0;
@@ -133,7 +132,7 @@ function updateOrderDisplay() {
                     ${item.name} <span class="text-muted">x${item.quantity}</span>
                 </div>
                 <div class="d-flex align-items-center">
-                    <span class="me-2">$${itemTotal.toFixed(2)}</span>
+                    <span class="me-2">₱${itemTotal.toFixed(2)}</span> 
                     <button class="btn btn-outline-danger btn-sm me-1 remove-one-btn" data-item-id="${item.id}">
                         <i class="fas fa-minus"></i>
                     </button>
@@ -213,10 +212,6 @@ socket.on('orderError', (msg) => {
 });
 
 
-/* ===========================
-   4. Receipt Generation
-   =========================== */
-
 function generateReceipt(orderNumber) {
     const now = new Date();
     let receiptText = `
@@ -234,14 +229,14 @@ function generateReceipt(orderNumber) {
         const itemTotal = item.price * item.quantity;
         const itemName = item.name.padEnd(15).substring(0, 15); // Pad and truncate
         const itemQty = String(item.quantity).padStart(3);
-        const itemPrice = `$${parseFloat(item.price).toFixed(2).padStart(6)}`;
-        const itemLineTotal = `$${itemTotal.toFixed(2).padStart(7)}`;
+        const itemPrice = `₱${parseFloat(item.price).toFixed(2).padStart(6)}`; 
+        const itemLineTotal = `₱${itemTotal.toFixed(2).padStart(7)}`; 
         receiptText += `\n${itemName} ${itemQty} ${itemPrice} ${itemLineTotal}`;
     });
 
     receiptText += `
     ----------------------------------------
-    TOTAL:                             $${orderTotalSpan.textContent.padStart(7)}
+    TOTAL:                             ₱${orderTotalSpan.textContent.padStart(7)} 
     ========================================
     Thank You for your order!
     ========================================

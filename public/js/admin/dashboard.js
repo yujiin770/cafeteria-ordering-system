@@ -22,37 +22,8 @@ const socket = io();
 let salesChart;
 
 /* ===========================
-   1. Fetch Analytics Data
+   1. Rendering Functions (Defined first)
    =========================== */
-async function fetchAnalyticsData() {
-    try {
-        const response = await fetch('/api/admin/dashboard-analytics');
-        if (!response.ok) throw new Error('Failed to fetch analytics data');
-        const data = await response.json();
-        console.log('Analytics Data:', data); // Debugging
-
-        // Update summary cards
-        document.getElementById('totalSalesToday').textContent = parseFloat(data.totalSalesToday || 0).toFixed(2);
-        document.getElementById('ordersCompleted').textContent = data.ordersCompletedToday || 0;
-        document.getElementById('ordersPending').textContent = data.ordersPending || 0;
-        document.getElementById('uniqueCustomers').textContent = data.uniqueCustomersToday || 0;
-
-        // Render Top Selling Items
-        renderTopSellingItems(data.topSellingItems);
-
-        // Render Sales Chart
-        renderSalesChart(data.salesDataLast7Days);
-
-        // Render Recent Activity (assuming it's part of the data)
-        renderRecentActivity(data.recentActivity);
-
-    } catch (error) {
-        console.error('Error fetching analytics data:', error);
-        // Display error message or default values
-        document.getElementById('salesChartMessage').style.display = 'block';
-    }
-}
-
 function renderTopSellingItems(items) {
     const topSellingItemsList = document.getElementById('topSellingItems');
     topSellingItemsList.innerHTML = '';
@@ -93,7 +64,7 @@ function renderSalesChart(salesData) {
         data: {
             labels: salesData.labels, // e.g., ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
             datasets: [{
-                label: 'Total Sales ($)',
+                label: 'Total Sales (₱)',
                 data: salesData.data, // e.g., [120, 190, 300, 170, 250, 310, 280]
                 backgroundColor: 'rgba(13, 110, 253, 0.2)', // Primary blue with transparency
                 borderColor: 'rgba(13, 110, 253, 1)',
@@ -110,7 +81,7 @@ function renderSalesChart(salesData) {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Sales ($)'
+                        text: 'Sales (₱)'
                     }
                 },
                 x: {
@@ -127,7 +98,7 @@ function renderSalesChart(salesData) {
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return `Sales: $${context.parsed.y.toFixed(2)}`;
+                            return `Sales: ₱${context.parsed.y.toFixed(2)}`;
                         }
                     }
                 }
@@ -154,24 +125,71 @@ function renderRecentActivity(activity) {
     });
 }
 
+// Function to display the logged-in username in the sidebar
+function displayUsernameInSidebar() {
+    const userStr = localStorage.getItem('user');
+    const userDisplayElement = document.getElementById('sidebar-user-display');
+    if (userStr && userDisplayElement) {
+        const user = JSON.parse(userStr);
+        userDisplayElement.textContent = `Welcome, ${user.username}!`;
+    }
+}
+
 
 /* ===========================
-   2. Sidebar & Page Initialization
+   2. Fetch Analytics Data (Calls rendering functions)
+   =========================== */
+async function fetchAnalyticsData() {
+    try {
+        const response = await fetch('/api/admin/dashboard-analytics');
+        if (!response.ok) throw new Error('Failed to fetch analytics data');
+        const data = await response.json();
+        console.log('Analytics Data:', data); // Debugging
+
+        // Update summary cards
+        document.getElementById('totalSalesToday').textContent = parseFloat(data.totalSalesToday || 0).toFixed(2);
+        document.getElementById('ordersCompleted').textContent = data.ordersCompletedToday || 0;
+        document.getElementById('ordersPending').textContent = data.ordersPending || 0;
+        document.getElementById('uniqueCustomers').textContent = data.uniqueCustomersToday || 0;
+
+        // Render Top Selling Items
+        renderTopSellingItems(data.topSellingItems);
+
+        // Render Sales Chart
+        renderSalesChart(data.salesDataLast7Days);
+
+        // Render Recent Activity (assuming it's part of the data)
+        renderRecentActivity(data.recentActivity);
+
+    } catch (error) {
+        console.error('Error fetching analytics data:', error);
+        // Display error message or default values
+        document.getElementById('salesChartMessage').style.display = 'block';
+    }
+}
+
+
+/* ===========================
+   3. Sidebar & Page Initialization
    =========================== */
 window.addEventListener('DOMContentLoaded', async () => {
     // Load sidebar partial
-    await loadPartial('sidebar-placeholder', '../partials/sidebar.html'); // Admin sidebar
+    await loadPartial('sidebar-placeholder', '../partials/sidebar.html');
 
     // Highlight active link
     const currentPath = window.location.pathname.split('/').pop();
     const sidebarLinks = document.querySelectorAll('#sidebar-wrapper .list-group-item');
     sidebarLinks.forEach(link => {
-        if (link.getAttribute('href') === currentPath) {
+        const linkHrefBasename = link.getAttribute('href').split('/').pop(); // Extract filename from href
+        if (linkHrefBasename === currentPath) { // Correct comparison
             link.classList.add('active');
         } else {
             link.classList.remove('active');
         }
     });
+
+    // Display username in sidebar
+    displayUsernameInSidebar();
 
     // Sidebar toggle logic (similar to kitchen)
     const sidebar = document.getElementById('sidebar-wrapper');

@@ -287,6 +287,8 @@ app.post('/api/admin/inventory', async (req, res) => {
             'INSERT INTO inventory (item_name, quantity, unit, low_stock_threshold) VALUES (?, ?, ?, ?)',
             [item_name, quantity, unit, low_stock_threshold || 10]
         );
+        // NEW: Emit WebSocket event after successful add
+        io.emit('inventoryUpdated'); // Emits when inventory changes
         res.status(201).json({ id: result.insertId, item_name, quantity, unit, low_stock_threshold, message: 'Inventory item added' });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
@@ -312,6 +314,8 @@ app.put('/api/admin/inventory/:id', async (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Inventory item not found' });
         }
+        // NEW: Emit WebSocket event after successful update
+        io.emit('inventoryUpdated'); // Emits when inventory changes
         res.json({ id, item_name, quantity, unit, low_stock_threshold, message: 'Inventory item updated' });
     } catch (err) {
         if (err.code === 'ER_DUP_ENTRY') {
@@ -330,6 +334,8 @@ app.delete('/api/admin/inventory/:id', async (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Inventory item not found' });
         }
+        // NEW: Emit WebSocket event after successful delete
+        io.emit('inventoryUpdated'); // Emits when inventory changes
         res.json({ message: 'Inventory item deleted' });
     } catch (err) {
         console.error('Admin delete inventory item error:', err);
@@ -345,8 +351,9 @@ app.delete('/api/admin/inventory/:id', async (req, res) => {
 app.get('/api/admin/menu/:menuItemId/ingredients', async (req, res) => {
     const { menuItemId } = req.params;
     try {
+        // MODIFIED: Added inv.quantity AS current_stock AND inv.unit AS inventory_unit
         const [results] = await db.query(
-            `SELECT mii.id, mii.inventory_item_id, inv.item_name, mii.quantity_needed, mii.unit_needed
+            `SELECT mii.id, mii.inventory_item_id, inv.item_name, mii.quantity_needed, mii.unit_needed, inv.quantity AS current_stock, inv.unit AS inventory_unit, inv.low_stock_threshold
              FROM menu_item_ingredients mii
              JOIN inventory inv ON mii.inventory_item_id = inv.id
              WHERE mii.menu_item_id = ?`,
@@ -569,7 +576,7 @@ io.on('connection', (socket) => {
             for (const orderedItem of orderData.items) {
                 // Fetch recipe for each menu item
                 const [recipe] = await db.query(
-                    `SELECT mii.inventory_item_id, mii.quantity_needed, mii.unit_needed, inv.item_name, inv.quantity AS current_stock
+                    `SELECT mii.inventory_item_id, mii.quantity_needed, mii.unit_needed, inv.item_name, inv.quantity AS current_stock, inv.unit AS inventory_unit, inv.low_stock_threshold
                      FROM menu_item_ingredients mii
                      JOIN inventory inv ON mii.inventory_item_id = inv.id
                      WHERE mii.menu_item_id = ?`,
@@ -586,7 +593,7 @@ io.on('connection', (socket) => {
                     const totalNeeded = ingredient.quantity_needed * orderedItem.quantity;
                     if (ingredient.current_stock < totalNeeded) {
                         // Low stock check - respond to client or log
-                        console.error(`❌ Insufficient stock for ${ingredient.item_name} (needed: ${totalNeeded} ${ingredient.unit_needed}, available: ${ingredient.current_stock} ${ingredient.unit_needed}) for order ${orderNumber}`);
+                        console.error(`❌ Insufficient stock for ${ingredient.item_name} (needed: ${totalNeeded} ${ingredient.unit_needed}, available: ${ingredient.current_stock} ${ingredient.inventory_unit}) for order ${orderNumber}`);
                         return socket.emit('orderError', `Insufficient stock for ${ingredient.item_name}.`);
                     }
 
@@ -600,12 +607,13 @@ io.on('connection', (socket) => {
                     // Check if stock is now below threshold
                     const [updatedStock] = await db.query('SELECT quantity, low_stock_threshold FROM inventory WHERE id = ?', [ingredient.inventory_item_id]);
                     if (updatedStock[0].quantity <= updatedStock[0].low_stock_threshold) {
-                        console.warn(`🚨 LOW STOCK ALERT: ${ingredient.item_name} is now at ${updatedStock[0].quantity} ${updatedStock[0].unit_needed}. Threshold: ${updatedStock[0].low_stock_threshold}`);
+                        console.warn(`🚨 LOW STOCK ALERT: ${ingredient.item_name} is now at ${updatedStock[0].quantity} ${ingredient.inventory_unit}. Threshold: ${updatedStock[0].low_stock_threshold}`);
                         // Emit a socket event to admin for low stock alerts
                         io.to('admin').emit('lowStockAlert', {
                             itemName: ingredient.item_name,
                             currentStock: updatedStock[0].quantity,
-                            threshold: updatedStock[0].low_stock_threshold
+                            threshold: updatedStock[0].low_stock_threshold,
+                            unit: ingredient.inventory_unit
                         });
                     }
                 }

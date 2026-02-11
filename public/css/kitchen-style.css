@@ -118,22 +118,30 @@ body {
     padding-left: 28px; /* Slide effect */
 }
 
-/* Active State (Emerald Green) */
-#sidebar-wrapper .list-group-item.active {
-    background-color: rgba(16, 185, 129, 0.1) !important; /* Green tint */
-    color: #fff !important;
-    border-right: 4px solid var(--kitchen-primary);
-}
-#sidebar-wrapper .list-group-item.active i {
-    color: var(--kitchen-primary);
+/* REMOVED: Active State (Emerald Green) - now handled by style.css */
+
+
+/* Logout Section - MODIFIED FOR DEEP BOTTOM STICKY */
+.sidebar-logout-section {
+    margin-top: auto !important; /* Pushes to bottom of flex container */
+    position: sticky; /* Make it stick within its scrollable parent */
+    bottom: 0; /* Anchor to the bottom */
+    background-color: var(--sidebar-bg); /* Ensure background covers content below */
+    z-index: 10; /* Ensure it's above other scrolling content */
+    border-top: 1px solid rgba(255,255,255,0.1) !important; /* Clear separator */
+    padding-top: 1.5rem; /* More padding for visual separation */
+    padding-bottom: 1.5rem; /* More padding for visual separation */
 }
 
-/* Logout */
-.mt-auto { margin-top: auto !important; }
-.text-danger:hover {
+/* Ensure hover styles still work on the sticky element */
+.sidebar-logout-section .list-group-item:hover {
     background-color: rgba(239, 68, 68, 0.1) !important;
     color: var(--danger) !important;
 }
+.sidebar-logout-section .list-group-item:hover i {
+    color: var(--danger) !important;
+}
+
 
 /* =========================================
    COLLAPSED STATE LOGIC

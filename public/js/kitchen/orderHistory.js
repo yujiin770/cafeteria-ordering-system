@@ -40,7 +40,6 @@ socket.on('orderStatusUpdate', (data) => {
 });
 
 
-/* 🧠 RENDER Order History Table */
 function renderOrderHistory(filteredOrders) {
     const tableBody = document.getElementById('orderHistoryTableBody');
     const noOrdersMessage = document.getElementById('noOrdersMessage');
@@ -69,7 +68,7 @@ function renderOrderHistory(filteredOrders) {
         const totalCell = row.insertCell();
         // FIX: Ensure order.total is a number before calling toFixed
         const orderTotal = parseFloat(order.total); // Convert to float
-        totalCell.textContent = `$${isNaN(orderTotal) ? '0.00' : orderTotal.toFixed(2)}`; // Handle NaN
+        totalCell.textContent = `₱${isNaN(orderTotal) ? '0.00' : orderTotal.toFixed(2)}`; // Changed $ to ₱, Handle NaN
         
         const statusCell = row.insertCell();
         statusCell.innerHTML = `<span class="badge bg-${getStatusBadgeClass(order.status)}">${order.status}</span>`;
@@ -131,6 +130,16 @@ function filterAndRenderOrders() {
     renderOrderHistory(filtered);
 }
 
+// Function to display the logged-in username in the sidebar
+function displayUsernameInSidebar() {
+    const userStr = localStorage.getItem('user');
+    const userDisplayElement = document.getElementById('sidebar-user-display');
+    if (userStr && userDisplayElement) {
+        const user = JSON.parse(userStr);
+        userDisplayElement.textContent = `Welcome, ${user.username}!`;
+    }
+}
+
 
 // When the page loads
 window.addEventListener('DOMContentLoaded', async () => {
@@ -147,6 +156,9 @@ window.addEventListener('DOMContentLoaded', async () => {
             link.classList.remove('active'); // Ensure only one is active
         }
     });
+
+    // Display username in sidebar
+    displayUsernameInSidebar();
 
     // Sidebar toggle logic
     const sidebar = document.getElementById('sidebar-wrapper');

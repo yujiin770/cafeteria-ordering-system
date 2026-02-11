@@ -136,6 +136,16 @@ async function fetchOrders() {
     }
 }
 
+// Function to display the logged-in username in the sidebar
+function displayUsernameInSidebar() {
+    const userStr = localStorage.getItem('user');
+    const userDisplayElement = document.getElementById('sidebar-user-display');
+    if (userStr && userDisplayElement) {
+        const user = JSON.parse(userStr);
+        userDisplayElement.textContent = `Welcome, ${user.username}!`;
+    }
+}
+
 
 // When the page loads, attach event listeners for sidebar toggling AND fetch initial orders
 window.addEventListener('DOMContentLoaded', async () => {
@@ -152,6 +162,9 @@ window.addEventListener('DOMContentLoaded', async () => {
             link.classList.remove('active'); // Ensure only one is active
         }
     });
+
+    // Display username in sidebar
+    displayUsernameInSidebar();
 
     // Sidebar toggle logic
     const sidebar = document.getElementById('sidebar-wrapper');

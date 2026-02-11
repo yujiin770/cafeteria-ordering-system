@@ -77,11 +77,9 @@ body {
     color: white;
 }
 
-#sidebar-wrapper .list-group-item.active {
-    background-color: rgba(13,110,253,0.2);
-    border-right: 4px solid #0d6efd;
-    color: white;
-}
+/* The problematic active class rule for admin has been removed from here.
+   It will now be handled by public/css/style.css, which uses the var(--admin-primary) */
+
 
 /* Collapsed Sidebar Adjustments */
 #sidebar-wrapper.collapsed .list-group-item span,

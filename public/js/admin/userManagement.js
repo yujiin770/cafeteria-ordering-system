@@ -169,6 +169,16 @@ async function deleteUser(id) {
     }
 }
 
+// Function to display the logged-in username in the sidebar
+function displayUsernameInSidebar() {
+    const userStr = localStorage.getItem('user');
+    const userDisplayElement = document.getElementById('sidebar-user-display');
+    if (userStr && userDisplayElement) {
+        const user = JSON.parse(userStr);
+        userDisplayElement.textContent = `Welcome, ${user.username}!`;
+    }
+}
+
 
 /* ===========================
    3. Initialization
@@ -181,12 +191,16 @@ window.addEventListener('DOMContentLoaded', async () => {
     const currentPath = window.location.pathname.split('/').pop();
     const sidebarLinks = document.querySelectorAll('#sidebar-wrapper .list-group-item');
     sidebarLinks.forEach(link => {
-        if (link.getAttribute('href') === currentPath) {
+        const linkHrefBasename = link.getAttribute('href').split('/').pop(); // Extract filename from href
+        if (linkHrefBasename === currentPath) { // Correct comparison
             link.classList.add('active');
         } else {
             link.classList.remove('active');
         }
     });
+
+    // Display username in sidebar
+    displayUsernameInSidebar();
 
     // Sidebar toggle logic
     const sidebar = document.getElementById('sidebar-wrapper');

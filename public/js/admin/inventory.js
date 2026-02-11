@@ -15,6 +15,8 @@ async function loadPartial(elementId, filePath) {
     }
 }
 
+const socket = io(); // MODIFIED: Initialize socket.io here
+
 let inventoryItems = []; // Store inventory items locally
 
 // DOM Elements
@@ -66,8 +68,8 @@ function renderInventoryItems() {
         row.innerHTML = `
             <td>${item.id}</td>
             <td>${item.item_name}</td>
-            <td>${item.quantity} ${item.unit} ${isLowStock ? '<span class="badge bg-danger ms-2">LOW STOCK!</span>' : ''}</td>
-            <td>${item.unit}</td>
+            <td>${item.quantity}</td> <!-- MODIFIED: Display only quantity here -->
+            <td>${item.unit} ${isLowStock ? '<span class="badge bg-danger ms-2">LOW STOCK!</span>' : ''}</td> <!-- MODIFIED: Display unit here, and low stock badge -->
             <td>${item.low_stock_threshold}</td>
             <td>${new Date(item.last_updated).toLocaleString()}</td>
             <td>
@@ -146,7 +148,7 @@ inventoryItemForm.addEventListener('submit', async (e) => {
         }
 
         inventoryItemModal.hide();
-        fetchInventoryItems(); // Re-fetch and render
+        // fetchInventoryItems(); // No need to call directly, socket.on('inventoryUpdated') will handle it
     } catch (error) {
         console.error('Error saving inventory item:', error);
         alert('Failed to save inventory item: ' + error.message);
@@ -168,10 +170,20 @@ async function deleteInventoryItem(id) {
             throw new Error(errorData.error || 'Failed to delete inventory item');
         }
 
-        fetchInventoryItems(); // Re-fetch and render
+        // fetchInventoryItems(); // No need to call directly, socket.on('inventoryUpdated') will handle it
     } catch (error) {
         console.error('Error deleting inventory item:', error);
         alert('Failed to delete inventory item: ' + error.message);
+    }
+}
+
+// Function to display the logged-in username in the sidebar
+function displayUsernameInSidebar() {
+    const userStr = localStorage.getItem('user');
+    const userDisplayElement = document.getElementById('sidebar-user-display');
+    if (userStr && userDisplayElement) {
+        const user = JSON.parse(userStr);
+        userDisplayElement.textContent = `Welcome, ${user.username}!`;
     }
 }
 
@@ -183,16 +195,22 @@ window.addEventListener('DOMContentLoaded', async () => {
     // Load sidebar partial
     await loadPartial('sidebar-placeholder', '../partials/sidebar.html');
 
-    // Highlight active link
-    const currentPath = window.location.pathname.split('/').pop();
+   // Highlight active link
+    const currentPath = window.location.pathname.split('/').pop(); // e.g., 'dashboard.html'
     const sidebarLinks = document.querySelectorAll('#sidebar-wrapper .list-group-item');
     sidebarLinks.forEach(link => {
-        if (link.getAttribute('href') === currentPath) {
+        // Extract the filename from the link's href attribute
+        const linkHrefBasename = link.getAttribute('href').split('/').pop(); // e.g., 'dashboard.html'
+        
+        if (linkHrefBasename === currentPath) { // Now the comparison is correct!
             link.classList.add('active');
         } else {
             link.classList.remove('active');
         }
     });
+
+    // Display username in sidebar
+    displayUsernameInSidebar();
 
     // Sidebar toggle logic (from dashboard.js, duplicated for this page)
     const sidebar = document.getElementById('sidebar-wrapper');
@@ -240,4 +258,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     // Fetch and render inventory items on page load
     fetchInventoryItems();
+
+    // MODIFIED: Listen for inventory updates from the server to refresh this page too
+    socket.on('inventoryUpdated', () => {
+        console.log('🔄 Received inventoryUpdated event. Re-fetching inventory list...');
+        fetchInventoryItems(); // Refresh inventory list in real-time
+    });
 });
