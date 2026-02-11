@@ -1,118 +1,427 @@
-/* =========================================
-   THEME: Midnight Slate
-   ========================================= */
+/* ==================================================
+   THEME: Midnight Slate (Unified, Responsive, FIXED INDICATOR)
+   ================================================== */
 :root {
-    --sidebar-bg: #0f172a;        /* Midnight Slate */
-    --sidebar-text: #94a3b8;      /* Muted Text */
+    /* Base Colors */
+    --sidebar-bg: #0f172a;        /* Midnight Slate (Dark) */
+    --sidebar-text: #94a3b8;      /* Muted Blue-Grey */
     --sidebar-text-hover: #ffffff;
     
-    /* ACCENT COLORS */
-    --admin-accent: #38bdf8;      /* Sky Blue (For Admin) */
-    --kitchen-accent: #10b981;    /* Emerald Green (For Kitchen) */
+    /* Backgrounds */
+    --body-bg: #f1f5f9;           /* Light Page Background */
+    --card-bg: #ffffff;           /* White Card Background */
     
+    /* ACCENT COLORS */
+    --admin-primary: #38bdf8;     /* Sky Blue (For Admin) */
+    --kitchen-primary: #10b981;   /* Emerald Green (For Kitchen) */
+    --danger: #ef4444;            /* Red for alerts/logout */
+
+    /* Status Colors (Used in Kitchen & Admin Dashboard) */
+    --status-pending: #f59e0b;    /* Amber */
+    --status-preparing: #0ea5e9;  /* Sky Blue */
+    --status-completed: #10b981;  /* Emerald Green (Matches kitchen-primary) */
+
+    /* Dimensions */
     --sidebar-width: 260px;
     --sidebar-collapsed-width: 70px;
+    --navbar-height: 4.5rem; /* Approximate height for sticky navbar */
 }
 
 body {
-    background-color: #f1f5f9;
+    background-color: var(--body-bg);
     font-family: 'Segoe UI', Roboto, sans-serif;
     overflow-x: hidden;
+    margin: 0; /* Ensure no default body margin */
 }
 
-/* --- WRAPPER --- */
-#wrapper { display: flex; width: 100%; align-items: stretch; }
-#page-content-wrapper { width: 100%; min-height: 100vh; transition: all 0.3s ease; }
+/* --- WRAPPER & LAYOUT --- */
+#wrapper {
+    display: flex;
+    width: 100%;
+    min-height: 100vh; /* Ensure wrapper covers full height */
+}
 
-/* --- SIDEBAR BASE --- */
+/* ==================================================
+   SIDEBAR CORE STYLES (Admin & Kitchen - DEFINITIVELY FIXED)
+   ================================================== */
 #sidebar-wrapper {
+    position: fixed !important; /* Force fixed positioning */
+    top: 0;
+    left: 0;
+    height: 100vh; /* Full viewport height */
     min-width: var(--sidebar-width);
     max-width: var(--sidebar-width);
-    background-color: var(--sidebar-bg);
+    background-color: var(--sidebar-bg) !important; /* Force dark background */
     color: var(--sidebar-text);
     transition: all 0.3s ease;
     display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    z-index: 1000;
+    flex-direction: column; /* For bottom-aligned logout */
+    z-index: 1050; /* Higher than navbar */
+    box-shadow: 2px 0 10px rgba(0,0,0,0.2); /* Stronger shadow */
+    overflow-y: auto; /* Allow sidebar content to scroll */
 }
 
-/* Header */
+/* Collapsed Sidebar */
+#sidebar-wrapper.collapsed {
+    min-width: var(--sidebar-collapsed-width);
+    max-width: var(--sidebar-collapsed-width);
+}
+
+/* Sidebar Header (Logo/Title Area) */
 .sidebar-heading {
-    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    background-color: rgba(0,0,0,0.2) !important; /* Darker than sidebar for contrast */
+    color: white !important; /* Force white text */
     font-size: 1.25rem;
-    font-weight: 700;
-    color: #fff;
+    font-weight: bold;
+    padding: 1.25rem 1rem; /* Adjusted padding */
     display: flex;
     align-items: center;
-    background: rgba(0,0,0,0.2);
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    gap: 10px; /* Space between icon and text */
+    white-space: nowrap;
+    overflow: hidden;
 }
-.sidebar-heading i { min-width: 35px; text-align: center; }
+/* Admin specific heading icon color (for its own theme) */
+.admin-theme .sidebar-heading i {
+    color: var(--admin-primary) !important;
+}
+/* Kitchen specific heading icon color */
+.kitchen-theme .sidebar-heading i {
+    color: var(--kitchen-primary) !important;
+}
 
-/* Category Labels */
+.sidebar-heading i { flex-shrink: 0; font-size: 1.3rem; text-align: center; }
+
+/* Category Labels (MAIN, SYSTEM, OPERATIONS) */
 .sidebar-category {
     font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px;
     font-weight: 700; color: #475569; padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: all 0.2s;
 }
 
-/* --- LIST ITEMS --- */
+/* Sidebar List Items (Links) */
 #sidebar-wrapper .list-group-item {
-    background-color: transparent !important;
-    color: var(--sidebar-text);
+    background-color: transparent !important; /* IMPORTANT: Override Bootstrap defaults */
+    color: var(--sidebar-text) !important;    /* IMPORTANT: Force text color */
     border: none;
-    padding: 12px 24px;
-    display: flex; align-items: center;
-    font-weight: 500; transition: all 0.2s;
-    border-right: 5px solid transparent; /* Placeholder for the indicator */
+    padding: 1rem 1.5rem; /* Adjusted padding from admin-style.css */
+    display: flex; /* Use flex for icon and text alignment */
+    align-items: center;
+    gap: 15px; /* Space between icon and text */
+    font-weight: 500;
+    transition: all 0.2s;
+    border-right: 5px solid transparent; /* This creates space for the indicator */
+    cursor: pointer;
+    white-space: nowrap; /* Prevent text wrapping */
+    overflow: hidden; /* Hide overflow if text is too long */
+    text-overflow: ellipsis; /* Add ellipsis if text overflows */
 }
 
 #sidebar-wrapper .list-group-item i {
-    min-width: 35px; text-align: left; font-size: 1.1rem;
+    font-size: 1.1rem;
+    width: 25px; /* Fixed width for icons to align text vertically */
+    text-align: center;
+    flex-shrink: 0; /* Prevent icons from shrinking */
 }
 
-/* Hover */
+/* Hover Effect for List Items */
 #sidebar-wrapper .list-group-item:hover {
-    background-color: rgba(255, 255, 255, 0.05) !important;
-    color: #fff;
-    padding-left: 28px; /* Slide effect */
+    background-color: rgba(255, 255, 255, 0.1) !important; /* Stronger hover effect */
+    transform: translateX(5px); /* Slide effect */
+    color: white !important;
 }
 
-/* =========================================
-   THE INDICATOR (WHERE ARE YOU?)
-   ========================================= */
+/* ==================================================
+   ACTIVE INDICATOR (THE COLORED STRIP - FINALLY FIXED!)
+   ================================================== */
 
-/* 1. ADMIN THEME (BLUE) */
+/* 1. ADMIN THEME (BLUE INDICATOR) */
 .admin-theme .list-group-item.active {
-    background-color: rgba(56, 189, 248, 0.15) !important; /* Blue Tint */
-    border-right-color: var(--admin-accent) !important;    /* THE BLUE INDICATOR */
+    background-color: rgba(56, 189, 248, 0.18) !important; /* Blue Tint */
+    border-right-color: var(--admin-primary) !important;    /* THE BLUE INDICATOR STRIP */
     color: #fff !important;
 }
-.admin-theme .list-group-item.active i { color: var(--admin-accent) !important; }
+.admin-theme .list-group-item.active i { color: var(--admin-primary) !important; }
 
-/* 2. KITCHEN THEME (GREEN) */
+/* 2. KITCHEN THEME (GREEN INDICATOR) */
 .kitchen-theme .list-group-item.active {
-    background-color: rgba(16, 185, 129, 0.15) !important; /* Green Tint */
-    border-right-color: var(--kitchen-accent) !important;  /* THE GREEN INDICATOR */
+    background-color: rgba(16, 185, 129, 0.18) !important; /* Green Tint */
+    border-right-color: var(--kitchen-primary) !important;  /* THE GREEN INDICATOR STRIP */
     color: #fff !important;
 }
-.kitchen-theme .list-group-item.active i { color: var(--kitchen-accent) !important; }
+.kitchen-theme .list-group-item.active i { color: var(--kitchen-primary) !important; }
+
+/* Logout Button Styling (fixed gap in bottom) */
+.sidebar-logout-section {
+    margin-top: auto; /* Pushes to bottom */
+    padding-top: 1rem;
+    padding-bottom: 1rem; /* Added some padding for better spacing */
+    border-top: 1px solid rgba(255,255,255,0.05); /* Separator */
+}
+/* Ensure the logout item itself has correct padding/hover */
+.sidebar-logout-section .list-group-item {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-right: 5px solid transparent; /* Keep indicator space */
+}
+.sidebar-logout-section .list-group-item:hover {
+    background-color: rgba(239, 68, 68, 0.1) !important; /* Red tint on hover */
+    color: var(--danger) !important;
+    transform: translateX(5px);
+}
+.sidebar-logout-section .list-group-item i {
+    color: var(--sidebar-text); /* Default color for logout icon */
+}
+.sidebar-logout-section .list-group-item:hover i {
+    color: var(--danger) !important; /* Red color for logout icon on hover */
+}
 
 
-/* --- COLLAPSED LOGIC --- */
-#sidebar-wrapper.collapsed { min-width: 70px; max-width: 70px; }
-#sidebar-wrapper.collapsed .sidebar-heading span,
+/* ==================================================
+   COLLAPSED SIDEBAR LOGIC (FIXED)
+   ================================================== */
 #sidebar-wrapper.collapsed .list-group-item span,
-#sidebar-wrapper.collapsed .sidebar-category { display: none !important; }
-#sidebar-wrapper.collapsed .sidebar-heading { justify-content: center; padding: 1.25rem 0; }
-#sidebar-wrapper.collapsed .list-group-item { justify-content: center; padding: 15px 0; }
-#sidebar-wrapper.collapsed .list-group-item:hover { padding-left: 0; }
-#sidebar-wrapper.collapsed .list-group-item i { text-align: center; }
+#sidebar-wrapper.collapsed .sidebar-heading span,
+#sidebar-wrapper.collapsed .sidebar-category {
+    display: none !important; /* Hide text, categories */
+    opacity: 0; /* Fade out effect */
+}
+#sidebar-wrapper.collapsed .sidebar-heading {
+    justify-content: center; /* Center icon */
+    padding: 1.25rem 0; /* Adjust padding */
+}
+#sidebar-wrapper.collapsed .list-group-item {
+    justify-content: center; /* Center icon */
+    padding: 15px 0; /* Adjust padding */
+    transform: translateX(0) !important; /* Remove slide effect when collapsed */
+    border-right: 5px solid transparent !important; /* Keep indicator space */
+}
+#sidebar-wrapper.collapsed .list-group-item:hover {
+    padding-left: 0 !important; /* No slide effect */
+}
+#sidebar-wrapper.collapsed .list-group-item i {
+    margin-right: 0; /* No margin next to hidden text */
+    width: auto; /* Auto width for centered icon */
+}
+#sidebar-wrapper.collapsed .sidebar-logout-section {
+    text-align: center; /* Center logout icon */
+    padding: 1rem 0; /* Adjust padding */
+}
+#sidebar-wrapper.collapsed .sidebar-logout-section .list-group-item {
+    padding: 15px 0 !important; /* Center logout item */
+}
 
-/* Mobile */
-@media (max-width: 768px) {
-    #sidebar-wrapper { margin-left: -260px; position: fixed; height: 100vh; }
-    #sidebar-wrapper.active { margin-left: 0; }
-    #sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
-    #sidebar-overlay.active { display: block; }
+
+/* ==================================================
+   PAGE CONTENT & NAVBAR STYLES (Unified & FIXED LAYOUT)
+   ================================================== */
+#page-content-wrapper {
+    margin-left: var(--sidebar-width); /* Initial offset for fixed sidebar */
+    width: calc(100% - var(--sidebar-width)); /* Fill remaining width */
+    transition: margin-left 0.3s ease, width 0.3s ease;
+    min-width: 0; /* Allow content to shrink */
+    padding-top: var(--navbar-height); /* Space for sticky navbar */
+}
+
+#page-content-wrapper.sidebar-collapsed {
+    margin-left: var(--sidebar-collapsed-width); /* Offset when sidebar is collapsed */
+    width: calc(100% - var(--sidebar-collapsed-width)); /* Adjust width */
+}
+
+.navbar {
+    background-color: var(--card-bg) !important; /* White Navbar */
+    box-shadow: 0 2px 15px rgba(0,0,0,0.04);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    position: fixed !important; /* Make navbar sticky/fixed */
+    top: 0;
+    left: var(--sidebar-width); /* Start next to expanded sidebar */
+    width: calc(100% - var(--sidebar-width)); /* Match page content width */
+    z-index: 1040; /* Below sidebar */
+    transition: left 0.3s ease, width 0.3s ease; /* Smooth transition with sidebar */
+    height: var(--navbar-height); /* Fixed height */
+    display: flex; /* Ensure flex for alignment */
+    align-items: center; /* Center items vertically */
+}
+
+/* Adjust navbar position/width when sidebar is collapsed */
+#page-content-wrapper.sidebar-collapsed .navbar {
+    left: var(--sidebar-collapsed-width);
+    width: calc(100% - var(--sidebar-collapsed-width));
+}
+
+.navbar .btn-outline-secondary { /* Use this for the toggle buttons */
+    border-color: #e2e8f0 !important;
+    color: #475569 !important;
+}
+.navbar .btn-outline-secondary:hover {
+    background-color: #f1f5f9;
+}
+.navbar .h5, .navbar .h3 {
+    margin-bottom: 0;
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 1.5rem; /* Adjusted title size */
+}
+
+
+/* Dashboard Cards & General Content Layout */
+.container-fluid.p-4 {
+    padding-top: 1rem !important; /* Adjust padding below navbar */
+}
+
+.row.mb-4 {
+    margin-left: -0.75rem; /* Compensate for column padding */
+    margin-right: -0.75rem;
+}
+.row.mb-4 > [class*="col-"] {
+    padding-left: 0.75rem; /* Adjust padding for cards in columns */
+    padding-right: 0.75rem;
+}
+
+.card {
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    background-color: var(--card-bg);
+    height: 100%; /* Ensure all cards in a row have equal height */
+}
+.card-header {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+/* Admin Dashboard Analytics Cards */
+.card.bg-primary { background-color: var(--admin-primary) !important; }
+.card.bg-success { background-color: var(--kitchen-primary) !important; } /* Re-using kitchen-primary for success */
+.card.bg-warning { background-color: var(--status-pending) !important; color: #212529 !important; }
+.card.bg-info { background-color: var(--status-preparing) !important; }
+
+.card-body .h4 { font-size: 1.75rem; font-weight: 800; word-break: break-all; }
+.card-body .h6 { font-size: 0.9rem; color: rgba(255,255,255,0.7); }
+.card-body i.fa-2x { opacity: 0.5; }
+
+/* Chart */
+#salesChart {
+    max-height: 300px; width: 100% !important; min-height: 150px;
+}
+
+/* List groups for Top Selling Items / Recent Activity */
+.list-group-item {
+    border-color: #e9ecef; /* Light border for list items */
+}
+.list-group-item:first-child { border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; }
+.list-group-item:last-child { border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
+
+
+/* Kitchen Order Cards */
+.order-card {
+    border-left: 5px solid #ccc; /* Default for kitchen orders */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.order-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+.order-pending { border-left-color: var(--status-pending) !important; }
+.order-preparing { border-left-color: var(--status-preparing) !important; }
+.order-completed { border-left-color: var(--status-completed) !important; opacity: 0.8; }
+
+/* Table Styles */
+.table thead th {
+    background-color: #f8fafc;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+.table td { vertical-align: middle; color: #334155; }
+.badge.bg-warning { background-color: #fef3c7 !important; color: #b45309 !important; }
+.badge.bg-info { background-color: #e0f2fe !important; color: #0369a1 !important; }
+.badge.bg-success { background-color: #dcfce7 !important; color: #15803d !important; }
+.badge.bg-danger { background-color: #fee2e2 !important; color: #dc2626 !important; }
+
+
+/* ==================================================
+   RESPONSIVENESS (FULLY INTEGRATED AND FIXED)
+   ================================================== */
+
+/* Desktop & Larger Screens (Sidebar visible, adjusts content) */
+@media (min-width: 992px) {
+    /* Hide mobile toggle, show desktop toggle */
+    .navbar #sidebarToggle { display: block !important; }
+    .navbar #sidebarCollapseMobile { display: none !important; }
+}
+
+/* Tablet & Smaller Desktops (Sidebar hidden, content takes full width) */
+@media (max-width: 991.98px) {
+    #sidebar-wrapper {
+        margin-left: calc(-1 * var(--sidebar-width)); /* Hide sidebar off-screen */
+        box-shadow: 5px 0 15px rgba(0,0,0,0.1); /* Stronger shadow for mobile slide-out */
+    }
+    #sidebar-wrapper.active {
+        margin-left: 0; /* Bring sidebar into view */
+    }
+    
+    #page-content-wrapper {
+        margin-left: 0 !important; /* No offset for content when sidebar is hidden */
+        width: 100% !important; /* Content takes full width */
+    }
+
+    /* Navbar behavior for mobile/tablet */
+    .navbar {
+        left: 0 !important; /* Navbar starts from left edge */
+        width: 100% !important; /* Navbar takes full width */
+    }
+    
+    #sidebar-overlay {
+        position: fixed; top: 0; left: 0;
+        width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 1045; /* Below sidebar, above page content */
+        display: none;
+    }
+    #sidebar-overlay.active {
+        display: block;
+    }
+
+    /* Hide desktop toggle button on mobile/tablet */
+    .navbar #sidebarToggle { display: none !important; }
+    /* Show mobile toggle button on mobile/tablet */
+    .navbar #sidebarCollapseMobile { display: block !important; }
+
+    /* Adjust titles */
+    .navbar .h5, .navbar .h3 {
+        font-size: 1.25rem; /* Smaller title on mobile/tablet */
+    }
+
+    /* Dashboard cards stack better */
+    .row.mb-4 > .col-md-3,
+    .row.mb-4 > .col-md-4 { /* Target specific columns for stacking */
+        flex: 0 0 50%; /* Two cards per row for tablets */
+        max-width: 50%;
+    }
+    /* Ensure other columns stack */
+    .row > .col-md-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+
+/* Extra Small Screens (Mobile Phones) */
+@media (max-width: 575.98px) {
+    /* Cards stack to one per row */
+    .row.mb-4 > .col-md-3,
+    .row.mb-4 > .col-md-4 {
+        flex: 0 0 100%; /* One card per row */
+        max-width: 100%;
+    }
+    /* Reduce padding for tighter layout */
+    .container-fluid.p-4 {
+        padding: 0.75rem !important;
+    }
+    .card .h4 {
+        font-size: 1.5rem; /* Smaller numbers on very small screens */
+    }
 }
