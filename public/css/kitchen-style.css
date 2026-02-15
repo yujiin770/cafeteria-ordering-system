@@ -13,6 +13,7 @@
     --k-prep: #54a0ff;         /* Pastel Blue */
     --k-prep-bg: #E3F2FD;
     --k-done: #1dd1a1;         /* Pastel Green */
+    --k-danger-bg: #ffebee;    /* Lighter red background */
     --k-danger: #ff6b6b;       /* Soft Red */
     
     --shadow-soft: 0 5px 15px rgba(0,0,0,0.05);
@@ -267,7 +268,9 @@ body {
 .badge-pending { background: #ffeaa7; color: #d35400; }
 .badge-preparing { background: #74b9ff; color: #0984e3; }
 .badge-completed { background: #55efc4; color: #00b894; }
-.badge-cancelled { background: #ff7675; color: #d63031; }
+.badge-cancelled { background: var(--k-danger-bg); color: var(--k-danger); }
+.badge-unknown   { background: #ced4da; color: #495057; } /* NEW: For unknown status */
+
 
 /* Item List inside Table */
 .item-list-small {

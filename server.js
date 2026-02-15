@@ -855,18 +855,69 @@ io.on('connection', (socket) => {
     });
 
     socket.on('updateOrderStatus', async (data) => {
-        console.log('🔄 Status update:', data.orderNumber, '→', data.status);
+        console.log('🔄 Server received updateOrderStatus:', data.orderNumber, '→', data.status); // Server-side debug log
 
         try {
+            const [currentOrderRows] = await db.query('SELECT status, items FROM orders WHERE orderNumber = ?', [data.orderNumber]);
+            if (currentOrderRows.length === 0) {
+                console.log('⚠️ No order found for status update:', data.orderNumber);
+                return socket.emit('statusError', 'Order not found.');
+            }
+            const currentOrderStatus = currentOrderRows[0].status;
+            const orderItems = JSON.parse(currentOrderRows[0].items);
+
+            // Handle inventory reversal if status changes to 'cancelled'
+            if (data.status === 'cancelled' && currentOrderStatus !== 'cancelled') {
+                console.log(`↩️ Attempting to reverse inventory for order ${data.orderNumber}`);
+                for (const orderedItem of orderItems) {
+                    // Fetch recipe for each menu item to know which inventory items to return
+                    const [recipe] = await db.query(
+                        `SELECT mii.inventory_item_id, mii.quantity_needed, inv.item_name
+                         FROM menu_item_ingredients mii
+                         JOIN inventory inv ON mii.inventory_item_id = inv.id
+                         WHERE mii.menu_item_id = ?`,
+                        [orderedItem.id]
+                    );
+
+                    if (recipe.length === 0) {
+                        console.warn(`⚠️ Menu item ID ${orderedItem.id} (${orderedItem.name}) has no recipe defined. Cannot reverse inventory for this item.`);
+                        continue; // Skip to the next ordered item if no recipe exists
+                    }
+
+                    for (const ingredient of recipe) {
+                        const totalReturned = ingredient.quantity_needed * orderedItem.quantity;
+                        await db.query(
+                            'UPDATE inventory SET quantity = quantity + ? WHERE id = ?',
+                            [totalReturned, ingredient.inventory_item_id]
+                        );
+                        console.log(`✅ Returned ${totalReturned} of ${ingredient.item_name} to inventory for order ${data.orderNumber}.`);
+                    }
+                }
+                io.emit('inventoryUpdated'); // Notify admin inventory page about changes
+            } else if (data.status === 'completed' && currentOrderStatus === 'pending') {
+                console.warn(`Attempted to complete a pending order without preparing. This might indicate a skipped step or direct completion.`);
+                // Optional: Add more robust validation or logging here if this flow is not expected.
+            } else if (data.status === 'pending' && currentOrderStatus === 'cancelled') {
+                 console.warn(`Attempted to change cancelled order ${data.orderNumber} back to pending. This action is usually disallowed or requires manual inventory adjustment.`);
+                 // If an order is re-activated from 'cancelled' to 'pending', inventory would need to be re-deducted.
+                 // This complex scenario is currently not automatically handled and would require additional logic.
+                 // For now, we allow the status change but log a warning.
+            } else if (data.status === 'preparing' && currentOrderStatus === 'cancelled') {
+                 console.warn(`Attempted to change cancelled order ${data.orderNumber} back to preparing. This action is usually disallowed or requires manual inventory adjustment.`);
+                 // Similar to 'pending' from 'cancelled', re-deduction is needed.
+            }
+
+
             const [result] = await db.query('UPDATE orders SET status = ? WHERE orderNumber = ?',
                 [data.status, data.orderNumber]
             );
 
+            console.log(`DB Update Result for ${data.orderNumber}: Affected Rows: ${result.affectedRows}`); // Crucial log
             if (result.affectedRows > 0) {
                 console.log(`✅ Status updated: ${data.orderNumber} → ${data.status}`);
                 io.emit('orderStatusUpdate', data); // Broadcast to all connected clients
             } else {
-                console.log('⚠️ No order found:', data.orderNumber);
+                console.log('⚠️ No order found or status was already the same:', data.orderNumber);
             }
         } catch (err) {
             console.error('❌ Status update error:', err);

@@ -24,17 +24,18 @@ socket.on('connect', () => {
 
 // When a new order comes in, add it to top and refresh
 socket.on('newOrder', (order) => {
+    console.log('DEBUG: Received newOrder in history:', order); // Debug log
     allOrders.unshift(order); 
     filterAndRenderOrders();
 });
 
-// When status changes, update the specific order and refresh
+// When status changes, trigger a full re-fetch to ensure consistency
 socket.on('orderStatusUpdate', (data) => {
-    const order = allOrders.find(o => o.orderNumber === data.orderNumber);
-    if (order) {
-        order.status = data.status;
-        filterAndRenderOrders();
-    }
+    console.log('DEBUG: Order status update received in history:', data); // Debug log
+    // Trigger a full re-fetch to ensure the most current and accurate data from the DB
+    // This is more robust for order status changes that can affect filtering and display.
+    fetchOrderHistory();
+    console.log('DEBUG: Triggered full history fetch due to status update.'); // Debug log
 });
 
 /* =========================================
@@ -42,12 +43,14 @@ socket.on('orderStatusUpdate', (data) => {
    ========================================= */
 async function fetchOrderHistory() {
     try {
+        console.log('DEBUG: Fetching full order history from API...'); // Debug log
         const response = await fetch('/api/order-history');
         if (!response.ok) throw new Error('Failed to fetch order history');
         allOrders = await response.json();
         
         // Sort: Newest orders first
         allOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        console.log('DEBUG: Fetched and sorted allOrders:', allOrders); // Debug log
         
         filterAndRenderOrders();
     } catch (error) {
@@ -66,16 +69,23 @@ async function fetchOrderHistory() {
    ========================================= */
 function filterAndRenderOrders() {
     const searchTerm = document.getElementById('orderSearch').value.toLowerCase();
-    const statusFilter = document.getElementById('statusFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value; // This is the value from the <select>
     const tableBody = document.getElementById('orderHistoryTableBody');
     const noOrdersMessage = document.getElementById('noOrdersMessage');
 
     if (!tableBody) return;
 
+    console.log(`DEBUG: Filtering orders. SearchTerm: "${searchTerm}", StatusFilter: "${statusFilter}"`); // Debug log
+
     // Filter Logic
     const filtered = allOrders.filter(order => {
+        // Defensive check: Ensure order.status is a string, default to 'unknown' if not.
+        const orderStatusLower = (order.status || 'unknown').toLowerCase(); 
+
         // 1. Check Status
-        const matchesStatus = statusFilter ? order.status === statusFilter : true;
+        // CRITICAL FIX: Ensure both the order status from data and the filter value are converted to lowercase
+        // for consistent comparison, preventing issues with case sensitivity or empty strings.
+        const matchesStatus = statusFilter ? orderStatusLower === statusFilter.toLowerCase() : true;
         
         // 2. Check Search (Order # or Item Names)
         const itemNames = order.items.map(i => i.name.toLowerCase()).join(' ');
@@ -83,6 +93,8 @@ function filterAndRenderOrders() {
         
         return matchesStatus && matchesSearch;
     });
+
+    console.log('DEBUG: Filtered results:', filtered); // Debug log
 
     // Clear Table
     tableBody.innerHTML = '';
@@ -104,11 +116,17 @@ function filterAndRenderOrders() {
         const dateObj = new Date(order.timestamp);
         const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+        // Defensive check: Ensure order.status is a string, default to 'unknown' if not.
+        const currentStatus = (order.status || 'unknown').toLowerCase();
+
         // Determine Badge Class (Matches CSS variables)
         let badgeClass = 'badge-pending'; // default
-        if (order.status === 'preparing') badgeClass = 'badge-preparing';
-        if (order.status === 'completed') badgeClass = 'badge-completed';
-        if (order.status === 'cancelled') badgeClass = 'badge-cancelled';
+        if (currentStatus === 'preparing') badgeClass = 'badge-preparing';
+        else if (currentStatus === 'completed') badgeClass = 'badge-completed';
+        else if (currentStatus === 'cancelled') badgeClass = 'badge-cancelled';
+        else if (currentStatus === 'unknown') badgeClass = 'badge-unknown'; // Apply new unknown badge
+
+        console.log(`DEBUG: Rendering order #${order.orderNumber}. Status: ${currentStatus}, Badge Class: ${badgeClass}`); // Debug log
 
         // Format Items List
         const itemsListHtml = order.items.map(item => 
@@ -127,7 +145,7 @@ function filterAndRenderOrders() {
                 </ul>
             </td>
             <td class="fw-bold text-dark">₱${totalAmount.toFixed(2)}</td>
-            <td><span class="badge badge-status ${badgeClass}">${order.status.toUpperCase()}</span></td>
+            <td><span class="badge badge-status ${badgeClass}">${(order.status || 'UNKNOWN').toUpperCase()}</span></td>
         `;
 
         tableBody.appendChild(row);

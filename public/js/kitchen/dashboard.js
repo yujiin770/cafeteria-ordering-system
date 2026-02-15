@@ -6,17 +6,19 @@ let soundEnabled = false;
    SOCKET LOGIC (No backend changes, just listeners)
    ================================================================= */
 socket.on('connect', () => {
-    console.log('✅ Kitchen Connected');
+    console.log('✅ Kitchen Connected to Dashboard'); // Added specific log
     socket.emit('joinRoom', 'kitchen');
 });
 
 socket.on('newOrder', (order) => {
+    console.log('DEBUG: Received newOrder on dashboard:', order); // Debug log
     if (soundEnabled) playAlert();
     orders.push(order);
     renderOrders();
 });
 
 socket.on('orderStatusUpdate', (data) => {
+    console.log('DEBUG: Order status update received on dashboard:', data); // Debug log
     const order = orders.find(o => o.orderNumber === data.orderNumber);
     if (order) {
         order.status = data.status;
@@ -52,10 +54,14 @@ function renderOrders() {
     }
 
     container.innerHTML = activeOrders.map(order => {
+        // Defensive check: Ensure order.status is a string, default to 'unknown' if not.
+        const currentStatus = (order.status || 'unknown').toLowerCase(); 
+
         // Determine Styles
-        const isPending = order.status === 'pending';
+        const isPending = currentStatus === 'pending';
         const statusClass = isPending ? 'status-pending' : 'status-preparing';
         const badgeText = isPending ? 'PENDING' : 'PREPARING';
+        // The main action button
         const btnText = isPending ? 'Start Preparing' : 'Mark Done';
         const nextStatus = isPending ? 'preparing' : 'completed';
         const timeStr = new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -68,6 +74,11 @@ function renderOrders() {
             </div>
         `).join('');
 
+        // Add a Cancel button that only appears for pending or preparing orders
+        const cancelButtonHtml = `
+            <button class="btn btn-danger btn-sm w-100 mt-2" onclick="confirmCancelOrder('${order.orderNumber}')">
+                <i class="fas fa-times-circle me-1"></i> Cancel Order
+            </button>`;
         return `
             <div class="col-12 col-md-6 col-lg-4 col-xl-3 ticket-anim">
                 <div class="kitchen-ticket ${statusClass}">
@@ -87,6 +98,7 @@ function renderOrders() {
                         <button class="btn-action shadow-sm" onclick="updateStatus('${order.orderNumber}', '${nextStatus}')">
                             ${btnText}
                         </button>
+                        ${(currentStatus === 'pending' || currentStatus === 'preparing') ? cancelButtonHtml : ''}
                     </div>
                 </div>
             </div>
@@ -96,9 +108,23 @@ function renderOrders() {
     updateCounts();
 }
 
+// Global scope function for cancel confirmation
+window.confirmCancelOrder = function(orderNumber) {
+    if (confirm(`Are you sure you want to cancel order #${orderNumber}? This action will revert inventory.`)) {
+        console.log(`DEBUG: Sending cancel request for order #${orderNumber}`); // Debug log
+        window.updateStatus(orderNumber, 'cancelled');
+    }
+}
+
 function updateCounts() {
     const counts = { pending: 0, preparing: 0, completed: 0 };
-    orders.forEach(o => { if (counts[o.status] !== undefined) counts[o.status]++; });
+    orders.forEach(o => { 
+        // Defensive check for status before counting
+        const currentStatus = (o.status || 'unknown').toLowerCase();
+        if (currentStatus === 'pending') counts.pending++;
+        if (currentStatus === 'preparing') counts.preparing++;
+        if (currentStatus === 'completed') counts.completed++;
+    });
 
     setText('pending-count', counts.pending);
     setText('preparing-count', counts.preparing);
@@ -137,7 +163,9 @@ function playAlert() {
 async function fetchOrders() {
     try {
         const res = await fetch('/api/orders');
-        orders = await res.json();
+        const data = await res.json(); // Await here for direct assignment
+        orders = data; 
+        console.log('DEBUG: Fetched initial orders for dashboard:', orders); // Debug log
         renderOrders();
     } catch (e) { console.error(e); }
 }
