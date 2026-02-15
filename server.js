@@ -855,29 +855,35 @@ io.on('connection', (socket) => {
     });
 
     socket.on('updateOrderStatus', async (data) => {
-        console.log('🔄 Server received updateOrderStatus:', data.orderNumber, '→', data.status);
+        console.log('🔄 Server received updateOrderStatus:', data.orderNumber, '→', data.status); // Server-side debug log
 
         try {
+            // Trim orderNumber to ensure no hidden whitespace issues
+            const orderNumberToUpdate = (data.orderNumber || '').trim();
+            const newStatus = (data.status || 'unknown').toLowerCase(); // Ensure status is lowercase and not empty
+
+            console.log(`DEBUG_SERVER: Processing update for orderNumber: '${orderNumberToUpdate}', newStatus: '${newStatus}'`);
+
             // 1. Get Current Order Status and Items
-            const [currentOrderRows] = await db.query('SELECT status, items FROM orders WHERE orderNumber = ?', [data.orderNumber]);
+            const [currentOrderRows] = await db.query('SELECT status, items FROM orders WHERE orderNumber = ?', [orderNumberToUpdate]);
             
             if (currentOrderRows.length === 0) {
-                console.log('⚠️ No order found for status update:', data.orderNumber);
+                console.log('⚠️ No order found in DB for update. OrderNumber:', orderNumberToUpdate);
                 return socket.emit('statusError', 'Order not found.');
             }
 
-            const currentOrderStatus = currentOrderRows[0].status;
+            const currentOrderStatus = (currentOrderRows[0].status || 'unknown').toLowerCase(); // Defensive read
             const orderItems = JSON.parse(currentOrderRows[0].items);
 
             // 2. Prevent reviving a cancelled order (Protects Inventory Integrity)
-            if (currentOrderStatus === 'cancelled' && data.status !== 'cancelled') {
-                console.warn(`🛑 Blocked attempt to revive cancelled order ${data.orderNumber}`);
+            if (currentOrderStatus === 'cancelled' && newStatus !== 'cancelled') {
+                console.warn(`🛑 Blocked attempt to revive cancelled order ${orderNumberToUpdate}`);
                 return socket.emit('statusError', 'Cannot reactivate a cancelled order. Please place a new order.');
             }
 
             // 3. Handle Inventory Reversal ONLY if moving TO 'cancelled' FROM a non-cancelled state
-            if (data.status === 'cancelled' && currentOrderStatus !== 'cancelled') {
-                console.log(`↩️ Reversing inventory for order ${data.orderNumber}`);
+            if (newStatus === 'cancelled' && currentOrderStatus !== 'cancelled') {
+                console.log(`↩️ Reversing inventory for order ${orderNumberToUpdate}`);
                 
                 for (const orderedItem of orderItems) {
                     // Fetch recipe for each menu item
@@ -900,6 +906,8 @@ io.on('connection', (socket) => {
                             );
                             console.log(`   ➕ Returned ${totalReturned} of ${ingredient.item_name}`);
                         }
+                    } else {
+                        console.warn(`   ⚠️ No recipe found for menu item ID ${orderedItem.id} (${orderedItem.name}) during cancellation. Inventory not reversed for this item.`);
                     }
                 }
                 
@@ -909,17 +917,20 @@ io.on('connection', (socket) => {
 
             // 4. Update the Status in Database
             const [result] = await db.query('UPDATE orders SET status = ? WHERE orderNumber = ?',
-                [data.status, data.orderNumber]
+                [newStatus, orderNumberToUpdate]
             );
 
+            console.log(`DEBUG_SERVER: DB Update Result for ${orderNumberToUpdate}: Affected Rows: ${result.affectedRows}`); // CRUCIAL LOG
             if (result.affectedRows > 0) {
-                console.log(`✅ Status updated: ${data.orderNumber} → ${data.status}`);
+                console.log(`✅ Status updated: ${orderNumberToUpdate} → ${newStatus}`);
                 // Broadcast to Kitchen (Dashboard/History) and Admin
-                io.emit('orderStatusUpdate', data); 
+                io.emit('orderStatusUpdate', { orderNumber: orderNumberToUpdate, status: newStatus }); 
+            } else {
+                console.log('⚠️ No order found or status was already the same (no rows affected):', orderNumberToUpdate);
             }
 
         } catch (err) {
-            console.error('❌ Status update error:', err);
+            console.error('❌ Server-side Status update error:', err);
             socket.emit('statusError', 'Database error updating status: ' + err.message);
         }
     });

@@ -257,8 +257,6 @@ body {
     background-color: #f1f2f6;
 }
 
-/* ... existing styles ... */
-
 /* Status Badges - ADD THESE TO THE BOTTOM OF THE FILE */
 .badge-status {
     padding: 8px 12px;
@@ -297,9 +295,9 @@ body {
     border: 1px solid #ffcdd2 !important;
 }
 
-.badge-unknown { 
-    background-color: #f1f2f6; 
-    color: #636e72; 
+.badge-cancelled { 
+    background-color: #ced4da; 
+    color: #495057; 
     border: 1px solid #dfe6e9; 
 }
 

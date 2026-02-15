@@ -34,11 +34,14 @@ function renderOrders() {
     if (!container) return;
 
     // Filter & Sort
-    const activeOrders = orders.filter(o => o.status === 'pending' || o.status === 'preparing');
+    const activeOrders = orders.filter(o => {
+        const currentStatus = (o.status || 'unknown').toLowerCase(); // Defensive check for status
+        return currentStatus === 'pending' || currentStatus === 'preparing';
+    });
     activeOrders.sort((a, b) => {
         // Priority: Pending first, then by time
-        if (a.status === 'pending' && b.status !== 'pending') return -1;
-        if (a.status !== 'pending' && b.status === 'pending') return 1;
+        if ((a.status || 'unknown').toLowerCase() === 'pending' && (b.status || 'unknown').toLowerCase() !== 'pending') return -1;
+        if ((a.status || 'unknown').toLowerCase() !== 'pending' && (b.status || 'unknown').toLowerCase() === 'pending') return 1;
         return new Date(a.timestamp) - new Date(b.timestamp);
     });
 

@@ -76,12 +76,15 @@ function filterAndRenderOrders() {
 
     if (!tableBody) return;
 
+    console.log(`DEBUG: Filtering orders. SearchTerm: "${searchTerm}", StatusFilter: "${statusFilter}"`); // Debug log
+
     // Filter Logic
     const filtered = allOrders.filter(order => {
-        const orderStatus = (order.status || 'unknown').toLowerCase(); 
+        // Defensive check: Ensure order.status is a string, default to 'unknown' if not.
+        const orderStatusLower = (order.status || 'cancelled').toLowerCase(); 
         
         // Check Status Filter (Exact match or show all)
-        const matchesStatus = statusFilter === '' ? true : orderStatus === statusFilter.toLowerCase();
+        const matchesStatus = statusFilter === '' ? true : orderStatusLower === statusFilter.toLowerCase();
         
         // Check Search Filter
         const itemNames = order.items.map(i => i.name.toLowerCase()).join(' ');
@@ -90,9 +93,12 @@ function filterAndRenderOrders() {
         return matchesStatus && matchesSearch;
     });
 
+    console.log('DEBUG: Filtered results:', filtered); // Debug log
+
     // Clear Table
     tableBody.innerHTML = '';
 
+    // Handle Empty State
     if (filtered.length === 0) {
         if (noOrdersMessage) noOrdersMessage.style.display = 'block';
         return;
@@ -100,18 +106,19 @@ function filterAndRenderOrders() {
         if (noOrdersMessage) noOrdersMessage.style.display = 'none';
     }
 
+    // Render Rows
     filtered.forEach(order => {
         const row = document.createElement('tr');
-        row.className = 'history-row-anim';
+        row.className = 'history-row-anim'; // Animation class from CSS
 
         const dateObj = new Date(order.timestamp);
         const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        // Normalize status
-        const currentStatus = (order.status || 'unknown').toLowerCase();
+        // Defensive check: Ensure order.status is a string, default to 'unknown' if not.
+        const currentStatus = (order.status || 'Cancelled').toLowerCase();
 
         // Determine Badge Styling
-        let badgeClass = 'badge-unknown'; 
+        let badgeClass = 'badge-cancelled'; // Default to cancelled style for unknown statuses
         let iconHtml = '<i class="fas fa-question-circle me-1"></i>';
 
         if (currentStatus === 'preparing') {
@@ -127,6 +134,9 @@ function filterAndRenderOrders() {
             badgeClass = 'badge-pending';
             iconHtml = '<i class="fas fa-clock me-1"></i>';
         }
+        // If it's truly 'unknown' (from DB being NULL/empty), the default badgeClass 'badge-unknown' will apply.
+
+        console.log(`DEBUG: Rendering order #${order.orderNumber}. Status: ${currentStatus}, Badge Class: ${badgeClass}`); // Debug log
 
         // Format Items List
         const itemsListHtml = order.items.map(item => 
@@ -141,9 +151,9 @@ function filterAndRenderOrders() {
             <td><ul class="item-list-small mb-0">${itemsListHtml}</ul></td>
             <td class="fw-bold text-dark">₱${totalAmount.toFixed(2)}</td>
             <td>
-                <!-- The badge will now force colors via CSS !important -->
+                <!-- The badge will now correctly apply based on currentStatus, forcing colors via CSS !important -->
                 <span class="badge badge-status ${badgeClass}">
-                    ${iconHtml} ${(order.status || 'UNKNOWN').toUpperCase()}
+                    ${iconHtml} ${(order.status || 'CANCELLED').toUpperCase()}
                 </span>
             </td>
         `;
