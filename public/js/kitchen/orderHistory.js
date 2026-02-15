@@ -67,39 +67,32 @@ async function fetchOrderHistory() {
 /* =========================================
    3. RENDER & FILTER LOGIC
    ========================================= */
+// Replace the filterAndRenderOrders function completely
 function filterAndRenderOrders() {
     const searchTerm = document.getElementById('orderSearch').value.toLowerCase();
-    const statusFilter = document.getElementById('statusFilter').value; // This is the value from the <select>
+    const statusFilter = document.getElementById('statusFilter').value;
     const tableBody = document.getElementById('orderHistoryTableBody');
     const noOrdersMessage = document.getElementById('noOrdersMessage');
 
     if (!tableBody) return;
 
-    console.log(`DEBUG: Filtering orders. SearchTerm: "${searchTerm}", StatusFilter: "${statusFilter}"`); // Debug log
-
     // Filter Logic
     const filtered = allOrders.filter(order => {
-        // Defensive check: Ensure order.status is a string, default to 'unknown' if not.
-        const orderStatusLower = (order.status || 'unknown').toLowerCase(); 
-
-        // 1. Check Status
-        // CRITICAL FIX: Ensure both the order status from data and the filter value are converted to lowercase
-        // for consistent comparison, preventing issues with case sensitivity or empty strings.
-        const matchesStatus = statusFilter ? orderStatusLower === statusFilter.toLowerCase() : true;
+        const orderStatus = (order.status || 'unknown').toLowerCase(); 
         
-        // 2. Check Search (Order # or Item Names)
+        // Check Status Filter (Exact match or show all)
+        const matchesStatus = statusFilter === '' ? true : orderStatus === statusFilter.toLowerCase();
+        
+        // Check Search Filter
         const itemNames = order.items.map(i => i.name.toLowerCase()).join(' ');
         const matchesSearch = order.orderNumber.toLowerCase().includes(searchTerm) || itemNames.includes(searchTerm);
         
         return matchesStatus && matchesSearch;
     });
 
-    console.log('DEBUG: Filtered results:', filtered); // Debug log
-
     // Clear Table
     tableBody.innerHTML = '';
 
-    // Handle Empty State
     if (filtered.length === 0) {
         if (noOrdersMessage) noOrdersMessage.style.display = 'block';
         return;
@@ -107,51 +100,57 @@ function filterAndRenderOrders() {
         if (noOrdersMessage) noOrdersMessage.style.display = 'none';
     }
 
-    // Render Rows
     filtered.forEach(order => {
         const row = document.createElement('tr');
-        row.className = 'history-row-anim'; // Animation class from CSS
+        row.className = 'history-row-anim';
 
-        // Format Date (e.g., 10/25/2023 2:30 PM)
         const dateObj = new Date(order.timestamp);
         const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        // Defensive check: Ensure order.status is a string, default to 'unknown' if not.
+        // Normalize status
         const currentStatus = (order.status || 'unknown').toLowerCase();
 
-        // Determine Badge Class (Matches CSS variables)
-        let badgeClass = 'badge-pending'; // default
-        if (currentStatus === 'preparing') badgeClass = 'badge-preparing';
-        else if (currentStatus === 'completed') badgeClass = 'badge-completed';
-        else if (currentStatus === 'cancelled') badgeClass = 'badge-cancelled';
-        else if (currentStatus === 'unknown') badgeClass = 'badge-unknown'; // Apply new unknown badge
+        // Determine Badge Styling
+        let badgeClass = 'badge-unknown'; 
+        let iconHtml = '<i class="fas fa-question-circle me-1"></i>';
 
-        console.log(`DEBUG: Rendering order #${order.orderNumber}. Status: ${currentStatus}, Badge Class: ${badgeClass}`); // Debug log
+        if (currentStatus === 'preparing') {
+            badgeClass = 'badge-preparing';
+            iconHtml = '<i class="fas fa-fire-burner me-1"></i>';
+        } else if (currentStatus === 'completed') {
+            badgeClass = 'badge-completed';
+            iconHtml = '<i class="fas fa-check me-1"></i>';
+        } else if (currentStatus === 'cancelled') {
+            badgeClass = 'badge-cancelled';
+            iconHtml = '<i class="fas fa-ban me-1"></i>';
+        } else if (currentStatus === 'pending') {
+            badgeClass = 'badge-pending';
+            iconHtml = '<i class="fas fa-clock me-1"></i>';
+        }
 
         // Format Items List
         const itemsListHtml = order.items.map(item => 
             `<li>${item.name} <span class="fw-bold text-dark">x${item.quantity}</span></li>`
         ).join('');
 
-        // Calculate Total safely
         const totalAmount = parseFloat(order.total) || 0;
 
         row.innerHTML = `
             <td><span class="fw-bold text-dark">#${order.orderNumber}</span></td>
             <td><small class="text-muted">${dateStr}</small></td>
-            <td>
-                <ul class="item-list-small mb-0">
-                    ${itemsListHtml}
-                </ul>
-            </td>
+            <td><ul class="item-list-small mb-0">${itemsListHtml}</ul></td>
             <td class="fw-bold text-dark">₱${totalAmount.toFixed(2)}</td>
-            <td><span class="badge badge-status ${badgeClass}">${(order.status || 'UNKNOWN').toUpperCase()}</span></td>
+            <td>
+                <!-- The badge will now force colors via CSS !important -->
+                <span class="badge badge-status ${badgeClass}">
+                    ${iconHtml} ${(order.status || 'UNKNOWN').toUpperCase()}
+                </span>
+            </td>
         `;
 
         tableBody.appendChild(row);
     });
 }
-
 /* =========================================
    4. INITIALIZATION
    ========================================= */
