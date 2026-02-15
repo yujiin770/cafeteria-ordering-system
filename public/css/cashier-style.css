@@ -1,0 +1,250 @@
+/* =========================================
+   THEME: Fresh & Fast (Coral & Mint)
+   ========================================= */
+:root {
+    --c-primary: #FF6B6B;      /* Coral Red - Appetite/Action */
+    --c-primary-hover: #ee5253;
+    --c-secondary: #4ECDC4;    /* Fresh Mint - Success/Balance */
+    --c-dark: #2D3436;         /* Charcoal - Text */
+    --c-light: #F7F9FC;        /* Cloud - Background */
+    --c-white: #ffffff;
+    --shadow-soft: 0 10px 20px rgba(0,0,0,0.05);
+    --shadow-hover: 0 15px 30px rgba(255, 107, 107, 0.15);
+    --radius-main: 16px;
+}
+
+body {
+    background-color: var(--c-light);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: var(--c-dark);
+    overflow-x: hidden;
+}
+
+/* NAVBAR */
+.navbar-cashier {
+    background: var(--c-white);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    padding: 0.8rem 2rem;
+    z-index: 1030;
+}
+.brand-text { font-weight: 800; letter-spacing: -0.5px; color: var(--c-dark); }
+.brand-highlight { color: var(--c-primary); }
+
+/* SEARCH BAR */
+.search-container {
+    position: relative;
+    margin-bottom: 2rem;
+}
+.search-input {
+    border-radius: 50px;
+    border: 2px solid #e9ecef;
+    padding-left: 50px;
+    height: 55px;
+    font-size: 1.1rem;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s ease;
+}
+.search-input:focus {
+    border-color: var(--c-secondary);
+    box-shadow: 0 0 0 4px rgba(78, 205, 196, 0.2);
+    outline: none;
+}
+.search-icon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #b2bec3;
+    font-size: 1.2rem;
+}
+
+/* MENU GRID */
+.menu-container { padding-bottom: 100px; }
+
+.menu-item-card {
+    border: none;
+    border-radius: var(--radius-main);
+    background: var(--c-white);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    position: relative;
+    box-shadow: var(--shadow-soft);
+    height: 100%;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.menu-item-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-hover);
+    border-color: rgba(255, 107, 107, 0.1);
+}
+
+.card-img-wrapper {
+    height: 160px;
+    overflow: hidden;
+    position: relative;
+    background-color: #f1f2f6;
+}
+
+.card-img-top {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.menu-item-card:hover .card-img-top { transform: scale(1.1); }
+
+.price-tag {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    color: var(--c-dark);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* Click Ripple Effect Placeholder */
+.menu-item-card:active { transform: scale(0.98); }
+
+/* ORDER SIDEBAR (Sticky) */
+.order-sidebar {
+    position: sticky;
+    top: 90px;
+    height: calc(100vh - 110px);
+    background: var(--c-white);
+    border-radius: var(--radius-main);
+    box-shadow: var(--shadow-soft);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #f1f2f6;
+}
+
+.order-header {
+    background: var(--c-dark);
+    color: white;
+    padding: 1.2rem;
+    border-radius: 15px 15px 0 0;
+}
+
+.order-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    background-color: #fff;
+}
+
+/* Order Items */
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border-left: 4px solid transparent;
+    transition: all 0.2s;
+    animation: slideInRight 0.3s ease-out forwards;
+}
+
+.order-item:hover {
+    background: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    border-left-color: var(--c-primary);
+}
+
+.order-qty-controls .btn-xs {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    padding: 0;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Footer Section */
+.order-footer {
+    padding: 1.5rem;
+    background: white;
+    border-top: 1px solid #f1f2f6;
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.03);
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+}
+
+.total-label { font-size: 0.9rem; color: #636e72; text-transform: uppercase; letter-spacing: 1px; }
+.total-amount { font-size: 2rem; font-weight: 800; color: var(--c-primary); line-height: 1; }
+
+.btn-place-order {
+    background: var(--c-primary);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+    transition: all 0.3s;
+    width: 100%;
+}
+
+.btn-place-order:hover:not(:disabled) {
+    background: var(--c-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255, 107, 107, 0.5);
+}
+
+.btn-place-order:disabled {
+    background: #bdc3c7;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+/* ANIMATIONS */
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+.shake { animation: shake 0.4s; }
+
+/* MODALS */
+.modal-content { border-radius: 20px; border: none; overflow: hidden; }
+.modal-header.bg-confirm { background: var(--c-secondary); color: white; }
+.modal-header.bg-receipt { background: var(--c-dark); color: white; }
+
+/* RESPONSIVE */
+@media (max-width: 991.98px) {
+    .order-sidebar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        top: auto;
+        width: 100%;
+        height: auto;
+        max-height: 60vh;
+        z-index: 1040;
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -5px 30px rgba(0,0,0,0.15);
+        transition: transform 0.3s ease;
+    }
+    .menu-container { padding-bottom: 80px; }
+}

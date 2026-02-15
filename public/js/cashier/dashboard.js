@@ -1,266 +1,290 @@
 const socket = io();
-let menu = []; // Stores all menu items fetched from the server
-let currentOrder = []; // Stores items currently in the cashier's order
+let menu = []; 
+let currentOrder = []; 
 
-// Get DOM elements
-const menuItemsContainer = document.getElementById('menu-items-container');
-const orderItemsList = document.getElementById('order-items-list');
-const orderTotalSpan = document.getElementById('order-total');
-const itemCountBadge = document.getElementById('item-count');
-const placeOrderBtn = document.getElementById('place-order-btn');
-const clearOrderBtn = document.getElementById('clear-order-btn');
-const emptyOrderMessage = document.getElementById('empty-order-message');
-const receiptModal = new bootstrap.Modal(document.getElementById('receiptModal'));
-const receiptContent = document.getElementById('receipt-content');
-const receiptOrderNumberSpan = document.getElementById('receiptOrderNumber');
+// Wait for HTML to load before running logic
+document.addEventListener('DOMContentLoaded', () => {
 
+    // --- DOM Elements ---
+    const menuItemsContainer = document.getElementById('menu-items-container');
+    const orderItemsList = document.getElementById('order-items-list');
+    const orderTotalSpan = document.getElementById('order-total');
+    const itemCountBadge = document.getElementById('item-count');
+    const emptyState = document.getElementById('empty-state');
+    const menuSearch = document.getElementById('menuSearch');
 
-/* ===========================
-   1. Initial Setup & Data Fetching
-   =========================== */
+    // Buttons
+    const prePlaceOrderBtn = document.getElementById('pre-place-order-btn');
+    const confirmPlaceOrderBtn = document.getElementById('confirm-place-order-btn');
+    const clearOrderBtn = document.getElementById('clear-order-btn');
 
-// Fetch menu items when the page loads or when updated
-async function fetchMenu() {
-    try {
-        const response = await fetch('/api/menu');
-        if (!response.ok) throw new Error('Failed to fetch menu items');
-        menu = await response.json();
-        displayMenu();
-    } catch (error) {
-        console.error('Error fetching menu:', error);
-        menuItemsContainer.innerHTML = `<div class="col-12 text-center text-danger p-5">
-                                            Failed to load menu. Please refresh.
-                                        </div>`;
-    }
-}
+    // Modals & Toast
+    const confirmationModalElement = document.getElementById('confirmationModal');
+    const receiptModalElement = document.getElementById('receiptModal');
+    
+    // Check if modals exist before creating Bootstrap instances to prevent other errors
+    const confirmationModal = confirmationModalElement ? new bootstrap.Modal(confirmationModalElement) : null;
+    const receiptModal = receiptModalElement ? new bootstrap.Modal(receiptModalElement) : null;
+    
+    const toastEl = document.getElementById('errorToast');
+    const toastMsg = document.getElementById('toast-msg');
+    const bsToast = toastEl ? new bootstrap.Toast(toastEl) : null;
 
-// Display menu items in the UI
-function displayMenu() {
-    menuItemsContainer.innerHTML = ''; // Clear loading message
+    // Specific Elements inside Modals
+    const confirmModalTotal = document.getElementById('confirm-modal-total');
+    const receiptContent = document.getElementById('receipt-content');
+    const receiptOrderNumber = document.getElementById('receiptOrderNumber');
 
-    if (menu.length === 0) {
-        menuItemsContainer.innerHTML = `<div class="col-12 text-center text-muted p-5">No menu items available.</div>`;
-        return;
-    }
+    // --- Initial Fetch ---
+    fetchMenu();
+    updateOrderDisplay();
 
-    menu.forEach(item => {
-        const col = document.createElement('div');
-        col.className = 'col-md-4 col-sm-6 mb-3';
-        // The image_url will now correctly point to the uploaded file
-        col.innerHTML = `
-            <div class="card h-100 menu-item-card shadow-sm" data-item-id="${item.id}">
-                <img src="${item.image_url || '/images/default-food.jpg'}" class="card-img-top" alt="${item.name}">
-                <div class="card-body text-center d-flex flex-column justify-content-between">
-                    <h5 class="card-title mb-1">${item.name}</h5>
-                    <p class="card-text text-muted">₱${parseFloat(item.price).toFixed(2)}</p>
-                    <button class="btn btn-primary btn-sm mt-2 add-to-order-btn" data-item-id="${item.id}">
-                        Add to Order
-                    </button>
-                </div>
-            </div>`;
-        menuItemsContainer.appendChild(col);
-    });
+    // --- Event Listeners (Safe Guarded) ---
 
-    document.querySelectorAll('.add-to-order-btn').forEach(button => {
-        button.addEventListener('click', (event) => {
-            const itemId = parseInt(event.target.dataset.itemId);
-            addToOrder(itemId);
+    // 1. Search Filter
+    if (menuSearch) {
+        menuSearch.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = menu.filter(item => item.name.toLowerCase().includes(term));
+            renderMenu(filtered);
         });
-    });
-}
+    }
 
+    // 2. Clear Order
+    if (clearOrderBtn) {
+        clearOrderBtn.addEventListener('click', () => {
+            if(currentOrder.length > 0 && confirm("Clear current order?")) {
+                currentOrder = [];
+                updateOrderDisplay();
+            }
+        });
+    }
 
-/* ===========================
-   2. Order Management (Client-side)
-   =========================== */
+    // 3. Trigger Confirmation Modal
+    if (prePlaceOrderBtn) {
+        prePlaceOrderBtn.addEventListener('click', () => {
+            if (currentOrder.length === 0) {
+                showToast("Order is empty!");
+                return;
+            }
+            // Update text inside modal
+            const total = document.getElementById('order-total').innerText;
+            if(confirmModalTotal) confirmModalTotal.innerText = `₱${total}`;
+            if(confirmationModal) confirmationModal.show();
+        });
+    }
 
-// Add item to current order
-function addToOrder(itemId) {
-    const existingItemIndex = currentOrder.findIndex(item => item.id === itemId);
+    // 4. Final Submit
+    if (confirmPlaceOrderBtn) {
+        confirmPlaceOrderBtn.addEventListener('click', () => {
+            // Re-calculate total from logic, not just UI text
+            let total = 0;
+            currentOrder.forEach(item => {
+                total += (item.price * item.quantity);
+            });
+            
+            const orderData = {
+                items: currentOrder,
+                total: total
+            };
 
-    if (existingItemIndex > -1) {
-        currentOrder[existingItemIndex].quantity++;
-    } else {
-        const menuItem = menu.find(item => item.id === itemId);
-        if (menuItem) {
-            currentOrder.push({ ...menuItem, quantity: 1 });
+            // UI Feedback
+            confirmPlaceOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            confirmPlaceOrderBtn.disabled = true;
+
+            // Emit to Backend
+            socket.emit('placeOrder', orderData);
+        });
+    }
+
+    // --- Functions ---
+
+    async function fetchMenu() {
+        try {
+            const response = await fetch('/api/menu');
+            if (!response.ok) throw new Error('Failed to fetch');
+            menu = await response.json();
+            renderMenu(menu);
+        } catch (error) {
+            console.error(error);
+            if(menuItemsContainer) menuItemsContainer.innerHTML = `<div class="col-12 text-center text-danger">Failed to load menu.</div>`;
         }
     }
-    updateOrderDisplay();
-}
 
-// Remove item from current order
-function removeFromOrder(itemId) {
-    const existingItemIndex = currentOrder.findIndex(item => item.id === itemId);
-
-    if (existingItemIndex > -1) {
-        if (currentOrder[existingItemIndex].quantity > 1) {
-            currentOrder[existingItemIndex].quantity--;
-        } else {
-            currentOrder.splice(existingItemIndex, 1); // Remove item if quantity is 1
+    function renderMenu(items) {
+        if (!menuItemsContainer) return;
+        menuItemsContainer.innerHTML = '';
+        
+        if (items.length === 0) {
+            menuItemsContainer.innerHTML = `<div class="col-12 text-center text-muted">No items found.</div>`;
+            return;
         }
-    }
-    updateOrderDisplay();
-}
 
-// Clear all items from current order
-function clearOrder() {
-    currentOrder = [];
-    updateOrderDisplay();
-}
-
-function updateOrderDisplay() {
-    orderItemsList.innerHTML = '';
-    let total = 0;
-    let itemCount = 0;
-
-    if (currentOrder.length === 0) {
-        emptyOrderMessage.style.display = 'block';
-        placeOrderBtn.disabled = true;
-    } else {
-        emptyOrderMessage.style.display = 'none';
-        placeOrderBtn.disabled = false;
-        currentOrder.forEach(item => {
-            const itemTotal = item.price * item.quantity;
-            total += itemTotal;
-            itemCount += item.quantity;
-
-            const listItem = document.createElement('div');
-            listItem.className = 'list-group-item';
-            listItem.innerHTML = `
-                <div>
-                    ${item.name} <span class="text-muted">x${item.quantity}</span>
-                </div>
-                <div class="d-flex align-items-center">
-                    <span class="me-2">₱${itemTotal.toFixed(2)}</span> 
-                    <button class="btn btn-outline-danger btn-sm me-1 remove-one-btn" data-item-id="${item.id}">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                    <button class="btn btn-outline-primary btn-sm add-one-btn" data-item-id="${item.id}">
-                        <i class="fas fa-plus"></i>
-                    </button>
+        items.forEach(item => {
+            // Create Card HTML
+            const col = document.createElement('div');
+            col.className = 'col-6 col-md-4 col-lg-4 col-xl-3';
+            col.innerHTML = `
+                <div class="menu-item-card h-100" data-id="${item.id}">
+                    <div class="card-img-wrapper">
+                        <img src="${item.image_url || '/images/default-food.jpg'}" class="card-img-top" alt="${item.name}">
+                    </div>
+                    <div class="p-3">
+                        <h6 class="fw-bold mb-1 text-truncate">${item.name}</h6>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="text-primary fw-bold">₱${parseFloat(item.price).toFixed(2)}</span>
+                            <button class="btn btn-sm btn-light rounded-circle text-primary">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             `;
-            orderItemsList.appendChild(listItem);
+            // Add click event manually to the element
+            col.querySelector('.menu-item-card').addEventListener('click', () => addToOrder(item.id));
+            menuItemsContainer.appendChild(col);
         });
     }
 
-    orderTotalSpan.textContent = total.toFixed(2);
-    itemCountBadge.textContent = `(${itemCount} items)`;
+    // Expose functions to global scope only if necessary, or keep them internal
+    window.addToOrder = function(id) {
+        const item = menu.find(i => i.id === id);
+        if (!item) return;
 
-    document.querySelectorAll('.remove-one-btn').forEach(button => {
-        button.addEventListener('click', (event) => {
-            const itemId = parseInt(event.currentTarget.dataset.itemId);
-            removeFromOrder(itemId);
-        });
-    });
-
-    document.querySelectorAll('.add-one-btn').forEach(button => {
-        button.addEventListener('click', (event) => {
-            const itemId = parseInt(event.currentTarget.dataset.itemId);
-            addToOrder(itemId);
-        });
-    });
-}
-
-
-/* ===========================
-   3. Order Placement (WebSocket)
-   =========================== */
-
-// Event listener for placing an order
-placeOrderBtn.addEventListener('click', () => {
-    if (currentOrder.length === 0) {
-        alert('Please add items to the order first.');
-        return;
-    }
-
-    const orderData = {
-        items: currentOrder.map(item => ({
-            id: item.id,
-            name: item.name,
-            price: parseFloat(item.price),
-            quantity: item.quantity
-        })),
-        total: parseFloat(orderTotalSpan.textContent)
+        const existing = currentOrder.find(i => i.id === id);
+        if (existing) {
+            existing.quantity++;
+        } else {
+            currentOrder.push({ ...item, quantity: 1 });
+        }
+        updateOrderDisplay();
     };
 
-    socket.emit('placeOrder', orderData);
-    placeOrderBtn.disabled = true;
-    placeOrderBtn.textContent = 'Placing Order...';
-});
+    window.removeFromOrder = function(id) {
+        const index = currentOrder.findIndex(i => i.id === id);
+        if (index > -1) {
+            if (currentOrder[index].quantity > 1) {
+                currentOrder[index].quantity--;
+            } else {
+                currentOrder.splice(index, 1);
+            }
+        }
+        updateOrderDisplay();
+    };
 
+    function updateOrderDisplay() {
+        if (!orderItemsList) return;
+        
+        orderItemsList.innerHTML = '';
+        let total = 0;
+        let count = 0;
 
-// Socket.IO event handler for successful order placement
-socket.on('orderPlaced', (data) => {
-    alert(`✅ Order ${data.orderNumber} placed successfully!`);
-    generateReceipt(data.orderNumber);
-    clearOrder();
+        if (currentOrder.length === 0) {
+            if(emptyState) emptyState.style.display = 'flex';
+            if(prePlaceOrderBtn) prePlaceOrderBtn.disabled = true;
+        } else {
+            if(emptyState) emptyState.style.display = 'none';
+            if(prePlaceOrderBtn) prePlaceOrderBtn.disabled = false;
 
-    placeOrderBtn.disabled = false;
-    placeOrderBtn.textContent = 'Place Order';
-});
+            currentOrder.forEach(item => {
+                const lineTotal = item.price * item.quantity;
+                total += lineTotal;
+                count += item.quantity;
 
-// Socket.IO event handler for order errors
-socket.on('orderError', (msg) => {
-    alert('❌ Order placement failed: ' + msg);
-    console.error('Order error:', msg);
-    placeOrderBtn.disabled = false;
-    placeOrderBtn.textContent = 'Place Order';
-});
+                const div = document.createElement('div');
+                div.className = 'order-item';
+                div.id = `order-item-${item.id}`;
+                div.innerHTML = `
+                    <div class="d-flex flex-column" style="width: 50%;">
+                        <span class="fw-bold text-truncate">${item.name}</span>
+                        <small class="text-muted">₱${parseFloat(item.price).toFixed(2)} each</small>
+                    </div>
+                    <div class="fw-bold text-dark" style="width: 20%;">₱${lineTotal.toFixed(2)}</div>
+                    <div class="order-qty-controls bg-white border rounded-pill p-1 d-flex align-items-center">
+                        <button class="btn btn-xs btn-light text-danger remove-btn"><i class="fas fa-minus"></i></button>
+                        <span class="mx-2 fw-bold" style="font-size: 0.9rem; min-width: 15px; text-align: center;">${item.quantity}</span>
+                        <button class="btn btn-xs btn-light text-success add-btn"><i class="fas fa-plus"></i></button>
+                    </div>
+                `;
+                
+                // Add listeners
+                div.querySelector('.remove-btn').addEventListener('click', () => window.removeFromOrder(item.id));
+                div.querySelector('.add-btn').addEventListener('click', () => window.addToOrder(item.id));
+                
+                orderItemsList.appendChild(div);
+            });
+        }
 
+        if(orderTotalSpan) orderTotalSpan.innerText = total.toFixed(2);
+        if(itemCountBadge) itemCountBadge.innerText = count;
+    }
 
-function generateReceipt(orderNumber) {
-    const now = new Date();
-    let receiptText = `
-    ========================================
-        CAFETERIA ORDERING SYSTEM
-    ========================================
-    Order Number: ${orderNumber}
-    Date: ${now.toLocaleDateString()}
-    Time: ${now.toLocaleTimeString()}
-    ----------------------------------------
-    Item             Qty   Price    Total
-    ----------------------------------------`;
+    function showToast(message, bgClass = 'bg-danger') {
+        if (!bsToast) return;
+        if(toastMsg) toastMsg.innerText = message;
+        if(toastEl) toastEl.className = `toast align-items-center text-white border-0 shadow ${bgClass}`;
+        bsToast.show();
+    }
 
-    currentOrder.forEach(item => {
-        const itemTotal = item.price * item.quantity;
-        const itemName = item.name.padEnd(15).substring(0, 15);
-        const itemQty = String(item.quantity).padStart(3);
-        const itemPrice = `₱${parseFloat(item.price).toFixed(2).padStart(6)}`;
-        const itemLineTotal = `₱${itemTotal.toFixed(2).padStart(7)}`;
-        receiptText += `\n${itemName} ${itemQty} ${itemPrice} ${itemLineTotal}`;
+    // --- Socket Events (Inside DOMContentLoaded to access vars) ---
+    
+    socket.on('menuUpdated', () => {
+        showToast('Menu updated by Admin', 'bg-info');
+        fetchMenu();
     });
 
-    receiptText += `
-    ----------------------------------------
-    TOTAL:                             ₱${orderTotalSpan.textContent.padStart(7)}
-    ========================================
-    Thank You for your order!
-    ========================================
-    `;
+    socket.on('orderPlaced', (data) => {
+        if(confirmationModal) confirmationModal.hide();
+        
+        // Reset Button
+        if(confirmPlaceOrderBtn) {
+            confirmPlaceOrderBtn.innerHTML = 'Yes, Confirm!';
+            confirmPlaceOrderBtn.disabled = false;
+        }
 
-    receiptOrderNumberSpan.textContent = `(#${orderNumber})`;
-    receiptContent.textContent = receiptText;
-    receiptModal.show();
-}
+        // Generate Receipt
+        generateReceipt(data.orderNumber);
+        
+        // Clear Data
+        currentOrder = [];
+        updateOrderDisplay();
+        
+        // Show Success Modal
+        if(receiptModal) receiptModal.show();
+    });
 
+    socket.on('orderError', (msg) => {
+        if(confirmationModal) confirmationModal.hide();
+        if(confirmPlaceOrderBtn) {
+            confirmPlaceOrderBtn.innerHTML = 'Yes, Confirm!';
+            confirmPlaceOrderBtn.disabled = false;
+        }
+        showToast(msg);
+    });
 
-/* ===========================
-   5. Event Listeners & Initialization
-   =========================== */
+    function generateReceipt(orderNum) {
+        const date = new Date().toLocaleString();
+        let html = `ORDER #: ${orderNum}\nDATE: ${date}\n--------------------------------\n`;
+        
+        // Using currentOrder logic before clearing it (or pass it from backend)
+        // Note: In socket.on('orderPlaced'), we clear currentOrder AFTER calling this, 
+        // but if backend data doesn't return items, we rely on current state.
+        // Ideally backend sends items back. Assuming currentOrder is still valid here.
+        
+        // However, we just cleared it in previous lines? 
+        // Wait, in socket.on above: generateReceipt -> then currentOrder = []. Correct.
+        
+        currentOrder.forEach(item => {
+            const total = (item.price * item.quantity).toFixed(2);
+            html += `${item.name} x${item.quantity}`.padEnd(20) + `₱${total}\n`;
+        });
+        
+        html += `--------------------------------\n`;
+        html += `TOTAL: ₱${document.getElementById('order-total').innerText}\n`;
+        html += `\nTHANK YOU FOR DINING!`;
+        
+        if(receiptOrderNumber) receiptOrderNumber.innerText = orderNum;
+        if(receiptContent) receiptContent.innerText = html;
+    }
 
-clearOrderBtn.addEventListener('click', clearOrder);
-
-
-socket.on('menuUpdated', () => {
-    console.log('🔄 Received menuUpdated event. Re-fetching menu...');
-    fetchMenu();
-});
-
-
-// Initialize on page load
-window.addEventListener('DOMContentLoaded', () => {
-    fetchMenu();
-    updateOrderDisplay();
 });

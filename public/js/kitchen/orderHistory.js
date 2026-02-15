@@ -1,36 +1,34 @@
-// This function fetches HTML content and injects it into a specified element
+// Function to load partial HTML (Sidebar)
 async function loadPartial(elementId, filePath) {
     try {
         const response = await fetch(filePath);
         if (!response.ok) throw new Error(`Could not load ${filePath}`);
         const text = await response.text();
         const placeholder = document.getElementById(elementId);
-        if (placeholder) {
-            placeholder.innerHTML = text;
-        } else {
-            console.warn(`Placeholder element with ID '${elementId}' not found.`);
-        }
+        if (placeholder) placeholder.innerHTML = text;
     } catch (error) {
         console.error('Error loading partial:', error);
     }
 }
 
-// Socket.IO (optional for history, but good to have if you want real-time updates for all orders)
 const socket = io();
-let allOrders = []; // Store all fetched orders to enable client-side filtering
+let allOrders = []; // Store all fetched orders for filtering
 
-/* 🔌 CONNECT - Join room if needed for real-time history updates */
+/* =========================================
+   1. SOCKET CONNECTION & REAL-TIME UPDATES
+   ========================================= */
 socket.on('connect', () => {
-    console.log('✅ Kitchen connected to Socket.IO for history');
+    console.log('✅ Kitchen connected to History');
     socket.emit('joinRoom', 'kitchen');
 });
 
-/* 🔄 Real-time updates (Optional: If you want history to update live) */
+// When a new order comes in, add it to top and refresh
 socket.on('newOrder', (order) => {
-    allOrders.unshift(order); // Add new orders to the beginning
+    allOrders.unshift(order); 
     filterAndRenderOrders();
 });
 
+// When status changes, update the specific order and refresh
 socket.on('orderStatusUpdate', (data) => {
     const order = allOrders.find(o => o.orderNumber === data.orderNumber);
     if (order) {
@@ -39,184 +37,168 @@ socket.on('orderStatusUpdate', (data) => {
     }
 });
 
-
-function renderOrderHistory(filteredOrders) {
-    const tableBody = document.getElementById('orderHistoryTableBody');
-    const noOrdersMessage = document.getElementById('noOrdersMessage');
-
-    tableBody.innerHTML = ''; // Clear existing rows
-
-    if (filteredOrders.length === 0) {
-        noOrdersMessage.style.display = 'block';
-        tableBody.style.display = 'none'; // Hide tbody when no orders
-        return;
-    } else {
-        noOrdersMessage.style.display = 'none';
-        tableBody.style.display = 'table-row-group'; // Show tbody
-    }
-
-    filteredOrders.forEach(order => {
-        const row = tableBody.insertRow();
-        row.className = `table-row-status-${order.status}`; // For potential styling
-
-        const orderNumCell = row.insertCell();
-        orderNumCell.textContent = order.orderNumber;
-
-        const itemsCell = row.insertCell();
-        itemsCell.innerHTML = order.items.map(item => `${item.name} x${item.quantity}`).join('<br>');
-
-        const totalCell = row.insertCell();
-        // FIX: Ensure order.total is a number before calling toFixed
-        const orderTotal = parseFloat(order.total); // Convert to float
-        totalCell.textContent = `₱${isNaN(orderTotal) ? '0.00' : orderTotal.toFixed(2)}`; // Changed $ to ₱, Handle NaN
-        
-        const statusCell = row.insertCell();
-        statusCell.innerHTML = `<span class="badge bg-${getStatusBadgeClass(order.status)}">${order.status}</span>`;
-
-        const timestampCell = row.insertCell();
-        timestampCell.textContent = new Date(order.timestamp).toLocaleString();
-    });
-}
-
-function getStatusBadgeClass(status) {
-    switch (status) {
-        case 'pending': return 'warning text-dark';
-        case 'preparing': return 'info';
-        case 'completed': return 'success';
-        case 'cancelled': return 'danger';
-        default: return 'secondary';
-    }
-}
-
-/* 🔄 Fetch Order History from Server */
+/* =========================================
+   2. FETCH DATA
+   ========================================= */
 async function fetchOrderHistory() {
     try {
-        const response = await fetch('/api/order-history'); // Call the new API endpoint
+        const response = await fetch('/api/order-history');
         if (!response.ok) throw new Error('Failed to fetch order history');
-        const data = await response.json();
-        allOrders = data; // Store all orders for client-side filtering
+        allOrders = await response.json();
+        
+        // Sort: Newest orders first
+        allOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
         filterAndRenderOrders();
     } catch (error) {
         console.error('Error fetching order history:', error);
         const tableBody = document.getElementById('orderHistoryTableBody');
         if (tableBody) {
             tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger p-4">
-                                        Error loading order history. Please refresh.
+                                        Error loading history. Please check connection.
                                     </td></tr>`;
         }
     }
 }
 
-/* 🔍 Filter and Render Orders */
+/* =========================================
+   3. RENDER & FILTER LOGIC
+   ========================================= */
 function filterAndRenderOrders() {
     const searchTerm = document.getElementById('orderSearch').value.toLowerCase();
     const statusFilter = document.getElementById('statusFilter').value;
+    const tableBody = document.getElementById('orderHistoryTableBody');
+    const noOrdersMessage = document.getElementById('noOrdersMessage');
 
-    let filtered = allOrders;
+    if (!tableBody) return;
 
-    // Filter by status
-    if (statusFilter) {
-        filtered = filtered.filter(order => order.status === statusFilter);
+    // Filter Logic
+    const filtered = allOrders.filter(order => {
+        // 1. Check Status
+        const matchesStatus = statusFilter ? order.status === statusFilter : true;
+        
+        // 2. Check Search (Order # or Item Names)
+        const itemNames = order.items.map(i => i.name.toLowerCase()).join(' ');
+        const matchesSearch = order.orderNumber.toLowerCase().includes(searchTerm) || itemNames.includes(searchTerm);
+        
+        return matchesStatus && matchesSearch;
+    });
+
+    // Clear Table
+    tableBody.innerHTML = '';
+
+    // Handle Empty State
+    if (filtered.length === 0) {
+        if (noOrdersMessage) noOrdersMessage.style.display = 'block';
+        return;
+    } else {
+        if (noOrdersMessage) noOrdersMessage.style.display = 'none';
     }
 
-    // Filter by search term (order number or item name)
-    if (searchTerm) {
-        filtered = filtered.filter(order =>
-            order.orderNumber.toLowerCase().includes(searchTerm) ||
-            (order.items && order.items.some(item => item.name.toLowerCase().includes(searchTerm)))
-        );
-    }
+    // Render Rows
+    filtered.forEach(order => {
+        const row = document.createElement('tr');
+        row.className = 'history-row-anim'; // Animation class from CSS
 
-    renderOrderHistory(filtered);
+        // Format Date (e.g., 10/25/2023 2:30 PM)
+        const dateObj = new Date(order.timestamp);
+        const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        // Determine Badge Class (Matches CSS variables)
+        let badgeClass = 'badge-pending'; // default
+        if (order.status === 'preparing') badgeClass = 'badge-preparing';
+        if (order.status === 'completed') badgeClass = 'badge-completed';
+        if (order.status === 'cancelled') badgeClass = 'badge-cancelled';
+
+        // Format Items List
+        const itemsListHtml = order.items.map(item => 
+            `<li>${item.name} <span class="fw-bold text-dark">x${item.quantity}</span></li>`
+        ).join('');
+
+        // Calculate Total safely
+        const totalAmount = parseFloat(order.total) || 0;
+
+        row.innerHTML = `
+            <td><span class="fw-bold text-dark">#${order.orderNumber}</span></td>
+            <td><small class="text-muted">${dateStr}</small></td>
+            <td>
+                <ul class="item-list-small mb-0">
+                    ${itemsListHtml}
+                </ul>
+            </td>
+            <td class="fw-bold text-dark">₱${totalAmount.toFixed(2)}</td>
+            <td><span class="badge badge-status ${badgeClass}">${order.status.toUpperCase()}</span></td>
+        `;
+
+        tableBody.appendChild(row);
+    });
 }
 
-// Function to display the logged-in username in the sidebar
-function displayUsernameInSidebar() {
-    const userStr = localStorage.getItem('user');
-    const userDisplayElement = document.getElementById('sidebar-user-display');
-    if (userStr && userDisplayElement) {
-        const user = JSON.parse(userStr);
-        userDisplayElement.textContent = `Welcome, ${user.username}!`;
-    }
-}
-
-
-// When the page loads
-window.addEventListener('DOMContentLoaded', async () => {
-    // Load sidebar partial
+/* =========================================
+   4. INITIALIZATION
+   ========================================= */
+document.addEventListener('DOMContentLoaded', async () => {
+    
+    // 1. Load Sidebar
     await loadPartial('sidebar-placeholder', '../partials/_kitchen_sidebar.html');
 
-    // Add 'active' class to the current page's sidebar link
-    const currentPath = window.location.pathname.split('/').pop(); // Gets 'orderHistory.html'
+    // 2. Sidebar Toggle Logic (Fixes the burger menu issue)
+    const menuToggle = document.getElementById('menu-toggle');
+    const wrapper = document.getElementById('wrapper');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    if (menuToggle && wrapper) {
+        menuToggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            wrapper.classList.toggle('toggled');
+        });
+    }
+
+    if (overlay && wrapper) {
+        overlay.addEventListener('click', () => {
+            wrapper.classList.remove('toggled');
+        });
+    }
+
+    // 3. Highlight Active Sidebar Link
+    const currentPath = window.location.pathname.split('/').pop();
     const sidebarLinks = document.querySelectorAll('#sidebar-wrapper .list-group-item');
     sidebarLinks.forEach(link => {
         if (link.getAttribute('href') === currentPath) {
             link.classList.add('active');
         } else {
-            link.classList.remove('active'); // Ensure only one is active
+            link.classList.remove('active');
         }
     });
 
-    // Display username in sidebar
-    displayUsernameInSidebar();
-
-    // Sidebar toggle logic
-    const sidebar = document.getElementById('sidebar-wrapper');
-    const pageContent = document.getElementById('page-content-wrapper'); // Ensure this is correctly retrieved
-    const sidebarOverlay = document.getElementById('sidebar-overlay');
-
-    const desktopToggleButton = document.getElementById('sidebarToggle');
-    if (desktopToggleButton) {
-        desktopToggleButton.addEventListener('click', () => {
-            if (sidebar && pageContent) { // Check both elements exist
-                sidebar.classList.toggle('collapsed');
-                pageContent.classList.toggle('sidebar-collapsed'); // RE-ADDED: Toggle class on content wrapper
-            }
+    // 4. Update Header Date
+    const dateDisplay = document.getElementById('date-display');
+    if (dateDisplay) {
+        dateDisplay.textContent = new Date().toLocaleDateString('en-US', { 
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
         });
     }
 
-    const mobileToggleButton = document.getElementById('sidebarCollapseMobile');
-    if (mobileToggleButton) {
-        mobileToggleButton.addEventListener('click', () => {
-            if (sidebar && sidebarOverlay) {
-                sidebar.classList.add('active');
-                sidebarOverlay.classList.add('active');
-            }
+    // 5. Event Listeners for Filters
+    const searchInput = document.getElementById('orderSearch');
+    const statusSelect = document.getElementById('statusFilter');
+    const refreshBtn = document.getElementById('refreshBtn');
+
+    if (searchInput) searchInput.addEventListener('input', filterAndRenderOrders);
+    if (statusSelect) statusSelect.addEventListener('change', filterAndRenderOrders);
+    
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            // Add spinning effect to icon
+            refreshBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin me-1"></i> Refreshing...';
+            fetchOrderHistory().then(() => {
+                setTimeout(() => {
+                    refreshBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Refresh';
+                }, 500);
+            });
         });
     }
 
-    const sidebarCloseButton = document.getElementById('sidebarCollapse');
-    if (sidebarCloseButton) {
-        sidebarCloseButton.addEventListener('click', () => {
-            if (sidebar && sidebarOverlay) {
-                sidebar.classList.remove('active');
-                sidebarOverlay.classList.remove('active');
-            }
-        });
-    }
-
-    if (sidebarOverlay) {
-        sidebarOverlay.addEventListener('click', () => {
-            if (sidebar && sidebarOverlay) {
-                sidebar.classList.remove('active');
-                sidebarOverlay.classList.remove('active');
-            }
-        });
-    }
-
-    // Add event listeners for search and filter (these are already correct)
-    document.getElementById('orderSearch').addEventListener('input', filterAndRenderOrders);
-    document.getElementById('statusFilter').addEventListener('change', filterAndRenderOrders);
-    document.getElementById('searchButton').addEventListener('click', (e) => {
-        e.preventDefault();
-        filterAndRenderOrders();
-    });
-    document.getElementById('clearFilters').addEventListener('click', () => {
-        document.getElementById('orderSearch').value = '';
-        document.getElementById('statusFilter').value = '';
-        filterAndRenderOrders();
-    });
-
-    // Initial fetch of order history
+    // 6. Initial Fetch
     fetchOrderHistory();
 });
