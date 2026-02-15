@@ -46,8 +46,10 @@ function displayMenu() {
     menu.forEach(item => {
         const col = document.createElement('div');
         col.className = 'col-md-4 col-sm-6 mb-3';
+        // The image_url will now correctly point to the uploaded file
         col.innerHTML = `
             <div class="card h-100 menu-item-card shadow-sm" data-item-id="${item.id}">
+                <img src="${item.image_url || '/images/default-food.jpg'}" class="card-img-top" alt="${item.name}">
                 <div class="card-body text-center d-flex flex-column justify-content-between">
                     <h5 class="card-title mb-1">${item.name}</h5>
                     <p class="card-text text-muted">₱${parseFloat(item.price).toFixed(2)}</p>
@@ -59,8 +61,6 @@ function displayMenu() {
         menuItemsContainer.appendChild(col);
     });
 
-    // Attach click listeners to "Add to Order" buttons
-    // Re-attach listeners every time the menu is displayed to ensure they work for new items
     document.querySelectorAll('.add-to-order-btn').forEach(button => {
         button.addEventListener('click', (event) => {
             const itemId = parseInt(event.target.dataset.itemId);
@@ -148,8 +148,6 @@ function updateOrderDisplay() {
     orderTotalSpan.textContent = total.toFixed(2);
     itemCountBadge.textContent = `(${itemCount} items)`;
 
-    // Attach event listeners for +/- buttons in the order list
-    // Re-attach listeners every time the order display is updated
     document.querySelectorAll('.remove-one-btn').forEach(button => {
         button.addEventListener('click', (event) => {
             const itemId = parseInt(event.currentTarget.dataset.itemId);
@@ -181,14 +179,14 @@ placeOrderBtn.addEventListener('click', () => {
         items: currentOrder.map(item => ({
             id: item.id,
             name: item.name,
-            price: parseFloat(item.price), // Ensure price is number
+            price: parseFloat(item.price),
             quantity: item.quantity
         })),
-        total: parseFloat(orderTotalSpan.textContent) // Get total from display
+        total: parseFloat(orderTotalSpan.textContent)
     };
 
     socket.emit('placeOrder', orderData);
-    placeOrderBtn.disabled = true; // Disable button while order is processing
+    placeOrderBtn.disabled = true;
     placeOrderBtn.textContent = 'Placing Order...';
 });
 
@@ -196,8 +194,8 @@ placeOrderBtn.addEventListener('click', () => {
 // Socket.IO event handler for successful order placement
 socket.on('orderPlaced', (data) => {
     alert(`✅ Order ${data.orderNumber} placed successfully!`);
-    generateReceipt(data.orderNumber); // Generate receipt
-    clearOrder(); // Clear the current order after successful placement
+    generateReceipt(data.orderNumber);
+    clearOrder();
 
     placeOrderBtn.disabled = false;
     placeOrderBtn.textContent = 'Place Order';
@@ -227,16 +225,16 @@ function generateReceipt(orderNumber) {
 
     currentOrder.forEach(item => {
         const itemTotal = item.price * item.quantity;
-        const itemName = item.name.padEnd(15).substring(0, 15); // Pad and truncate
+        const itemName = item.name.padEnd(15).substring(0, 15);
         const itemQty = String(item.quantity).padStart(3);
-        const itemPrice = `₱${parseFloat(item.price).toFixed(2).padStart(6)}`; 
-        const itemLineTotal = `₱${itemTotal.toFixed(2).padStart(7)}`; 
+        const itemPrice = `₱${parseFloat(item.price).toFixed(2).padStart(6)}`;
+        const itemLineTotal = `₱${itemTotal.toFixed(2).padStart(7)}`;
         receiptText += `\n${itemName} ${itemQty} ${itemPrice} ${itemLineTotal}`;
     });
 
     receiptText += `
     ----------------------------------------
-    TOTAL:                             ₱${orderTotalSpan.textContent.padStart(7)} 
+    TOTAL:                             ₱${orderTotalSpan.textContent.padStart(7)}
     ========================================
     Thank You for your order!
     ========================================
@@ -244,7 +242,7 @@ function generateReceipt(orderNumber) {
 
     receiptOrderNumberSpan.textContent = `(#${orderNumber})`;
     receiptContent.textContent = receiptText;
-    receiptModal.show(); // Show the receipt modal
+    receiptModal.show();
 }
 
 
@@ -255,15 +253,14 @@ function generateReceipt(orderNumber) {
 clearOrderBtn.addEventListener('click', clearOrder);
 
 
-// NEW: Socket.IO listener for menu updates from Admin
 socket.on('menuUpdated', () => {
     console.log('🔄 Received menuUpdated event. Re-fetching menu...');
-    fetchMenu(); // Re-fetch the menu to get the latest changes
+    fetchMenu();
 });
 
 
 // Initialize on page load
 window.addEventListener('DOMContentLoaded', () => {
     fetchMenu();
-    updateOrderDisplay(); // Initialize empty order display
+    updateOrderDisplay();
 });

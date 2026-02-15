@@ -2,9 +2,12 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const { Server } = require("socket.io");
-const mysql = require('mysql2/promise'); // Using promise-based API for async/await
+const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
-const moment = require('moment'); // For date manipulation in analytics
+const moment = require('moment');
+const multer = require('multer');
+const fs = require('fs'); // Import file system module for deleting files
+
 
 const app = express();
 const server = http.createServer(app);
@@ -17,6 +20,24 @@ const io = new Server(server, {
 
 const PORT = 3000;
 const SALT_ROUNDS = 10;
+
+// Multer Configuration for image uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        // Ensure the directory exists
+        const uploadPath = 'public/uploads/images/';
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath); // Store uploaded images in public/uploads/images
+    },
+    filename: function (req, file, cb) {
+        // Use original file name with a timestamp to avoid conflicts
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+const upload = multer({ storage: storage });
+
 
 // Database Connection (using promise-based API)
 let db;
@@ -40,6 +61,7 @@ let db;
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
+
 // Routes
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'views', 'index.html'));
@@ -50,7 +72,7 @@ app.get('/', (req, res) => {
 // ============================================
 app.get('/api/menu', async (req, res) => {
     try {
-        const [results] = await db.query('SELECT * FROM menu ORDER BY name ASC');
+        const [results] = await db.query('SELECT id, name, price, image_url FROM menu ORDER BY name ASC');
         res.json(results);
     } catch (err) {
         console.error('Menu query error:', err);
@@ -121,24 +143,19 @@ app.get('/api/admin/dashboard-analytics', async (req, res) => {
 
         // Top Selling Items (Past 7 days)
         const [topSellingItemsResults] = await db.query(
-            `SELECT JSON_EXTRACT(items, '$[*].name') AS itemNames, JSON_EXTRACT(items, '$[*].quantity') AS itemQuantities
-             FROM orders
-             WHERE status = 'completed' AND timestamp >= ?`,
+            `SELECT items, total FROM orders WHERE status = 'completed' AND timestamp >= ?`,
             [sevenDaysAgo]
         );
 
         const itemCounts = {};
         topSellingItemsResults.forEach(order => {
             try {
-                const names = JSON.parse(order.itemNames);
-                const quantities = JSON.parse(order.itemQuantities);
-
-                names.forEach((name, index) => {
-                    const quantity = parseInt(quantities[index] || 0);
-                    itemCounts[name] = (itemCounts[name] || 0) + quantity;
+                const orderItems = JSON.parse(order.items); // Parse the full items JSON
+                orderItems.forEach(item => { // Iterate through each item object
+                    itemCounts[item.name] = (itemCounts[item.name] || 0) + item.quantity;
                 });
             } catch (e) {
-                console.error('Failed to parse item names/quantities from JSON_EXTRACT:', e, order);
+                console.error('Failed to parse order items JSON for dashboard analytics:', e, order);
             }
         });
 
@@ -192,6 +209,151 @@ app.get('/api/admin/dashboard-analytics', async (req, res) => {
     }
 });
 
+// Admin Sales Report Endpoint
+app.get('/api/admin/sales-report', async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+
+        if (!startDate || !endDate) {
+            return res.status(400).json({ error: 'Start date and end date are required.' });
+        }
+
+        const startOfDay = moment(startDate).startOf('day').format('YYYY-MM-DD HH:mm:ss');
+        const endOfDay = moment(endDate).endOf('day').format('YYYY-MM-DD HH:mm:ss');
+
+        // 1. Overall Sales
+        const [overallSalesResults] = await db.query(
+            "SELECT SUM(total) AS totalRevenue, COUNT(id) AS totalOrders, AVG(total) AS avgOrderValue FROM orders WHERE status = 'completed' AND timestamp BETWEEN ? AND ?",
+            [startOfDay, endOfDay]
+        );
+        const overallSales = overallSalesResults[0];
+
+        // 2. Sales Trend (Daily Sales)
+        const dateRange = [];
+        let currentDate = moment(startDate).startOf('day');
+        const lastDate = moment(endDate).endOf('day');
+
+        while (currentDate.isSameOrBefore(lastDate, 'day')) {
+            dateRange.push(currentDate.format('YYYY-MM-DD'));
+            currentDate.add(1, 'days');
+        }
+
+        const [dailySalesResults] = await db.query(
+            `SELECT DATE_FORMAT(timestamp, '%Y-%m-%d') AS saleDate, SUM(total) AS dailyTotal
+             FROM orders
+             WHERE status = 'completed' AND timestamp BETWEEN ? AND ?
+             GROUP BY saleDate
+             ORDER BY saleDate ASC`,
+            [startOfDay, endOfDay]
+        );
+
+        const salesMap = new Map(dailySalesResults.map(row => [row.saleDate, parseFloat(row.dailyTotal)]));
+        
+        const salesTrend = {
+            labels: dateRange,
+            data: dateRange.map(date => salesMap.get(date) || 0)
+        };
+
+        // 3. Top Selling Items
+        const [topSellingItemsResults] = await db.query(
+            `SELECT items, total
+             FROM orders
+             WHERE status = 'completed' AND timestamp BETWEEN ? AND ?`,
+            [startOfDay, endOfDay]
+        );
+
+        const itemSales = {};
+        topSellingItemsResults.forEach(order => {
+            try {
+                const orderItems = JSON.parse(order.items);
+                const orderTotal = parseFloat(order.total);
+
+                let totalOrderItemsValue = 0;
+                orderItems.forEach(item => {
+                    totalOrderItemsValue += (item.price * item.quantity);
+                });
+
+                orderItems.forEach(item => {
+                    const itemName = item.name;
+                    const quantity = item.quantity;
+                    const itemPrice = item.price;
+
+                    if (!itemSales[itemName]) {
+                        itemSales[itemName] = { itemName: itemName, totalQuantitySold: 0, totalRevenueGenerated: 0 };
+                    }
+                    itemSales[itemName].totalQuantitySold += quantity;
+
+                    if (totalOrderItemsValue > 0) {
+                        itemSales[itemName].totalRevenueGenerated += (itemPrice * quantity / totalOrderItemsValue) * orderTotal;
+                    } else {
+                        itemSales[itemName].totalRevenueGenerated += (itemPrice * quantity);
+                    }
+                });
+            } catch (e) {
+                console.error('Failed to parse order items JSON for sales report:', e, order);
+            }
+        });
+
+        const topSellingItems = Object.values(itemSales)
+            .sort((a, b) => {
+                if (b.totalQuantitySold === a.totalQuantitySold) {
+                    return b.totalRevenueGenerated - a.totalRevenueGenerated;
+                }
+                return b.totalQuantitySold - a.totalQuantitySold;
+            })
+            .slice(0, 10);
+        
+        res.json({
+            overallSales,
+            salesTrend,
+            topSellingItems
+        });
+
+    } catch (error) {
+        console.error('Error fetching admin sales report:', error);
+        res.status(500).json({ error: 'Database error fetching sales report' });
+    }
+});
+
+
+// ============================================
+// API Endpoints - Admin Settings Management
+// ============================================
+
+// Get all settings
+app.get('/api/admin/settings', async (req, res) => {
+    try {
+        const [results] = await db.query('SELECT setting_key, setting_value FROM settings');
+        const settings = {};
+        results.forEach(row => {
+            settings[row.setting_key] = row.setting_value;
+        });
+        res.json(settings);
+    } catch (err) {
+        console.error('Error fetching settings:', err);
+        res.status(500).json({ error: 'Database error fetching settings' });
+    }
+});
+
+// Update settings
+app.put('/api/admin/settings', async (req, res) => {
+    const newSettings = req.body;
+
+    try {
+        const updates = Object.keys(newSettings).map(key => {
+            return db.query('INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',
+                [key, newSettings[key], newSettings[key]]
+            );
+        });
+
+        await Promise.all(updates);
+        res.json({ message: 'Settings updated successfully!' });
+    } catch (err) {
+        console.error('Error updating settings:', err);
+        res.status(500).json({ error: 'Database error updating settings' });
+    }
+});
+
 
 // ============================================
 // API Endpoints - Admin Menu Management (CRUD)
@@ -199,7 +361,7 @@ app.get('/api/admin/dashboard-analytics', async (req, res) => {
 // Get all menu items
 app.get('/api/admin/menu', async (req, res) => {
     try {
-        const [results] = await db.query('SELECT * FROM menu ORDER BY name ASC');
+        const [results] = await db.query('SELECT id, name, price, image_url FROM menu ORDER BY name ASC');
         res.json(results);
     } catch (err) {
         console.error('Admin menu query error:', err);
@@ -208,38 +370,79 @@ app.get('/api/admin/menu', async (req, res) => {
 });
 
 // Add new menu item
-app.post('/api/admin/menu', async (req, res) => {
+app.post('/api/admin/menu', upload.single('image'), async (req, res) => {
     const { name, price } = req.body;
+    const image_url = req.file ? `/uploads/images/${req.file.filename}` : null;
+
     if (!name || !price) {
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
         return res.status(400).json({ error: 'Name and price are required' });
     }
+
     try {
-        const [result] = await db.query('INSERT INTO menu (name, price) VALUES (?, ?)', [name, price]);
-        // NEW: Emit WebSocket event after successful add
+        const [result] = await db.query('INSERT INTO menu (name, price, image_url) VALUES (?, ?, ?)', [name, price, image_url]);
         io.emit('menuUpdated');
-        res.status(201).json({ id: result.insertId, name, price, message: 'Menu item added' });
+        res.status(201).json({ id: result.insertId, name, price, image_url, message: 'Menu item added' });
     } catch (err) {
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
         console.error('Admin add menu item error:', err);
         res.status(500).json({error: 'Database error'});
     }
 });
 
 // Update menu item
-app.put('/api/admin/menu/:id', async (req, res) => {
+app.put('/api/admin/menu/:id', upload.single('image'), async (req, res) => {
     const { id } = req.params;
-    const { name, price } = req.body;
+    const { name, price, existing_image_url } = req.body;
+    let image_url = existing_image_url;
+
+    if (req.file) {
+        image_url = `/uploads/images/${req.file.filename}`;
+        if (existing_image_url && existing_image_url.startsWith('/uploads/images/')) {
+            const oldImagePath = path.join(__dirname, 'public', existing_image_url);
+            if (fs.existsSync(oldImagePath)) {
+                fs.unlink(oldImagePath, (err) => {
+                    if (err) console.error('Error deleting old image:', oldImagePath, err);
+                });
+            }
+        }
+    } else if (req.body.clear_image === 'true') {
+        image_url = null;
+        if (existing_image_url && existing_image_url.startsWith('/uploads/images/')) {
+            const oldImagePath = path.join(__dirname, 'public', existing_image_url);
+            if (fs.existsSync(oldImagePath)) {
+                fs.unlink(oldImagePath, (err) => {
+                    if (err) console.error('Error deleting old image during clear:', oldImagePath, err);
+                });
+            }
+        }
+    }
+
     if (!name || !price) {
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
         return res.status(400).json({ error: 'Name and price are required' });
     }
+
     try {
-        const [result] = await db.query('UPDATE menu SET name = ?, price = ? WHERE id = ?', [name, price, id]);
+        const [result] = await db.query('UPDATE menu SET name = ?, price = ?, image_url = ? WHERE id = ?', [name, price, image_url, id]);
         if (result.affectedRows === 0) {
+            if (req.file) {
+                fs.unlinkSync(req.file.path);
+            }
             return res.status(404).json({ error: 'Menu item not found' });
         }
-        // NEW: Emit WebSocket event after successful update
         io.emit('menuUpdated');
-        res.json({ id, name, price, message: 'Menu item updated' });
+        res.json({ id, name, price, image_url, message: 'Menu item updated' });
     } catch (err) {
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
         console.error('Admin update menu item error:', err);
         res.status(500).json({error: 'Database error'});
     }
@@ -249,11 +452,23 @@ app.put('/api/admin/menu/:id', async (req, res) => {
 app.delete('/api/admin/menu/:id', async (req, res) => {
     const { id } = req.params;
     try {
+        const [menuItemResults] = await db.query('SELECT image_url FROM menu WHERE id = ?', [id]);
+        const menuItem = menuItemResults[0];
+
         const [result] = await db.query('DELETE FROM menu WHERE id = ?', [id]);
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Menu item not found' });
         }
-        // NEW: Emit WebSocket event after successful delete
+
+        if (menuItem && menuItem.image_url && menuItem.image_url.startsWith('/uploads/images/')) {
+            const imagePath = path.join(__dirname, 'public', menuItem.image_url);
+            if (fs.existsSync(imagePath)) {
+                fs.unlink(imagePath, (err) => {
+                    if (err) console.error('Error deleting menu item image file:', imagePath, err);
+                });
+            }
+        }
+
         io.emit('menuUpdated');
         res.json({ message: 'Menu item deleted' });
     } catch (err) {
@@ -287,7 +502,6 @@ app.post('/api/admin/inventory', async (req, res) => {
             'INSERT INTO inventory (item_name, quantity, unit, low_stock_threshold) VALUES (?, ?, ?, ?)',
             [item_name, quantity, unit, low_stock_threshold || 10]
         );
-        // NEW: Emit WebSocket event after successful add
         io.emit('inventoryUpdated'); // Emits when inventory changes
         res.status(201).json({ id: result.insertId, item_name, quantity, unit, low_stock_threshold, message: 'Inventory item added' });
     } catch (err) {
@@ -314,7 +528,6 @@ app.put('/api/admin/inventory/:id', async (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Inventory item not found' });
         }
-        // NEW: Emit WebSocket event after successful update
         io.emit('inventoryUpdated'); // Emits when inventory changes
         res.json({ id, item_name, quantity, unit, low_stock_threshold, message: 'Inventory item updated' });
     } catch (err) {
@@ -334,7 +547,6 @@ app.delete('/api/admin/inventory/:id', async (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Inventory item not found' });
         }
-        // NEW: Emit WebSocket event after successful delete
         io.emit('inventoryUpdated'); // Emits when inventory changes
         res.json({ message: 'Inventory item deleted' });
     } catch (err) {
@@ -351,7 +563,6 @@ app.delete('/api/admin/inventory/:id', async (req, res) => {
 app.get('/api/admin/menu/:menuItemId/ingredients', async (req, res) => {
     const { menuItemId } = req.params;
     try {
-        // MODIFIED: Added inv.quantity AS current_stock AND inv.unit AS inventory_unit
         const [results] = await db.query(
             `SELECT mii.id, mii.inventory_item_id, inv.item_name, mii.quantity_needed, mii.unit_needed, inv.quantity AS current_stock, inv.unit AS inventory_unit, inv.low_stock_threshold
              FROM menu_item_ingredients mii
@@ -391,7 +602,7 @@ app.post('/api/admin/menu/:menuItemId/ingredients', async (req, res) => {
 // Update an ingredient in a menu item's recipe
 app.put('/api/admin/menu/:menuItemId/ingredients/:ingredientId', async (req, res) => {
     const { menuItemId, ingredientId } = req.params;
-    const { inventory_item_id, quantity_needed, unit_needed } = req.body; // inventory_item_id might be updated too
+    const { inventory_item_id, quantity_needed, unit_needed } = req.body;
 
     if (!inventory_item_id || !quantity_needed || !unit_needed) {
         return res.status(400).json({ error: 'Inventory item ID, quantity, and unit are required for an ingredient' });
@@ -562,7 +773,7 @@ io.on('connection', (socket) => {
         console.log(`📱 ${socket.id} joined ${role} room`);
     });
 
-    socket.on('placeOrder', async (orderData) => { // Made this async
+    socket.on('placeOrder', async (orderData) => {
         console.log('🧾 New order from:', socket.id);
         console.log('📦 Order data:', JSON.stringify(orderData, null, 2));
 
@@ -585,16 +796,16 @@ io.on('connection', (socket) => {
 
                 if (recipe.length === 0) {
                     console.warn(`⚠️ Menu item ID ${orderedItem.id} (${orderedItem.name}) has no recipe defined. Cannot deduct inventory.`);
-                    // Optionally, you could throw an error here to prevent the order
-                    // throw new Error(`Recipe not defined for ${orderedItem.name}`);
+                    // It's crucial that menu items have recipes if inventory is to be deducted.
+                    // You might want to throw an error here to prevent the order if a recipe is mandatory.
+                    return socket.emit('orderError', `Recipe not defined for '${orderedItem.name}'. Order cancelled.`);
                 }
 
                 for (const ingredient of recipe) {
                     const totalNeeded = ingredient.quantity_needed * orderedItem.quantity;
                     if (ingredient.current_stock < totalNeeded) {
-                        // Low stock check - respond to client or log
                         console.error(`❌ Insufficient stock for ${ingredient.item_name} (needed: ${totalNeeded} ${ingredient.unit_needed}, available: ${ingredient.current_stock} ${ingredient.inventory_unit}) for order ${orderNumber}`);
-                        return socket.emit('orderError', `Insufficient stock for ${ingredient.item_name}.`);
+                        return socket.emit('orderError', `Insufficient stock for '${ingredient.item_name}'. Order cancelled.`);
                     }
 
                     // Deduct from inventory
@@ -605,15 +816,14 @@ io.on('connection', (socket) => {
                     console.log(`✅ Deducted ${totalNeeded} ${ingredient.unit_needed} of ${ingredient.item_name} from inventory.`);
 
                     // Check if stock is now below threshold
-                    const [updatedStock] = await db.query('SELECT quantity, low_stock_threshold FROM inventory WHERE id = ?', [ingredient.inventory_item_id]);
+                    const [updatedStock] = await db.query('SELECT quantity, low_stock_threshold, unit FROM inventory WHERE id = ?', [ingredient.inventory_item_id]);
                     if (updatedStock[0].quantity <= updatedStock[0].low_stock_threshold) {
-                        console.warn(`🚨 LOW STOCK ALERT: ${ingredient.item_name} is now at ${updatedStock[0].quantity} ${ingredient.inventory_unit}. Threshold: ${updatedStock[0].low_stock_threshold}`);
-                        // Emit a socket event to admin for low stock alerts
+                        console.warn(`🚨 LOW STOCK ALERT: ${ingredient.item_name} is now at ${updatedStock[0].quantity} ${updatedStock[0].unit}. Threshold: ${updatedStock[0].low_stock_threshold}`);
                         io.to('admin').emit('lowStockAlert', {
                             itemName: ingredient.item_name,
                             currentStock: updatedStock[0].quantity,
                             threshold: updatedStock[0].low_stock_threshold,
-                            unit: ingredient.inventory_unit
+                            unit: updatedStock[0].unit
                         });
                     }
                 }
@@ -644,7 +854,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('updateOrderStatus', async (data) => { // Made this async
+    socket.on('updateOrderStatus', async (data) => {
         console.log('🔄 Status update:', data.orderNumber, '→', data.status);
 
         try {

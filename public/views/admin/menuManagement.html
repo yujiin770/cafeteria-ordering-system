@@ -9,6 +9,24 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
           integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg=="
           crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        .image-preview {
+            width: 150px;
+            height: 150px;
+            border: 1px dashed #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+        }
+        .image-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+    </style>
 </head>
 <body class="bg-light">
     <div class="d-flex" id="wrapper">
@@ -49,11 +67,13 @@
                                         <th>ID</th>
                                         <th>Name</th>
                                         <th>Price</th>
+                                        <th>Image</th> <!-- NEW COLUMN: Image -->
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="menuItemsTableBody">
-                                    <tr><td colspan="4" class="text-center text-muted p-4">Loading menu items...</td></tr>
+                                    <!-- MODIFIED: colspan updated to 5 for "Loading menu items..." message -->
+                                    <tr><td colspan="5" class="text-center text-muted p-4">Loading menu items...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -72,22 +92,40 @@
 
     <!-- Menu Item Modal (Add/Edit) -->
     <div class="modal fade" id="menuItemModal" tabindex="-1" aria-labelledby="menuItemModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg"> <!-- Changed to modal-lg for more space -->
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="menuItemModalLabel">Menu Item Details</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="menuItemForm">
+                    <!-- IMPORTANT: enctype="multipart/form-data" is crucial for file uploads -->
+                    <form id="menuItemForm" enctype="multipart/form-data">
                         <input type="hidden" id="menuItemId">
+                        <input type="hidden" id="existingImageUrl"> <!-- To keep track of current image -->
                         <div class="mb-3">
                             <label for="itemName" class="form-label">Item Name</label>
-                            <input type="text" class="form-control" id="itemName" required>
+                            <input type="text" class="form-control" id="itemName" name="name" required>
                         </div>
                         <div class="mb-3">
                             <label for="itemPrice" class="form-label">Price</label>
-                            <input type="number" step="0.01" class="form-control" id="itemPrice" required>
+                            <input type="number" step="0.01" class="form-control" id="itemPrice" name="price" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="itemImageFile" class="form-label">Item Image</label>
+                            <input type="file" class="form-control" id="itemImageFile" name="image" accept="image/*">
+                            <small class="form-text text-muted">Select an image file (JPG, PNG, GIF).</small>
+                        </div>
+                        <div class="mb-3">
+                            <div class="image-preview" id="imagePreview">
+                                <span class="text-muted">No Image</span>
+                            </div>
+                            <div class="form-check mt-2" id="clearImageContainer" style="display:none;">
+                                <input class="form-check-input" type="checkbox" value="true" id="clearImageCheckbox" name="clear_image">
+                                <label class="form-check-label" for="clearImageCheckbox">
+                                    Clear existing image
+                                </label>
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100" id="saveMenuItemBtn">Save Item Details</button>
                     </form>
@@ -134,12 +172,11 @@
                                         <th>Inventory Item</th>
                                         <th>Quantity Needed</th>
                                         <th>Unit</th>
-                                        <th>Current Stock</th> <!-- NEW COLUMN -->
+                                        <th>Current Stock</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="menuItemIngredientsTableBody">
-                                    <!-- MODIFIED: colspan updated to 5 -->
                                     <tr><td colspan="5" class="text-center text-muted p-3">No ingredients added yet.</td></tr>
                                 </tbody>
                             </table>
