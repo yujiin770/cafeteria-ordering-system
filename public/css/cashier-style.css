@@ -1,21 +1,24 @@
 /* =========================================
-   THEME: Fresh & Fast (Coral & Mint)
+   THEME: Cafeteria Brand (Green & Orange)
    ========================================= */
 :root {
-    --c-primary: #FF6B6B;      /* Coral Red - Appetite/Action */
-    --c-primary-hover: #ee5253;
-    --c-secondary: #4ECDC4;    /* Fresh Mint - Success/Balance */
-    --c-dark: #2D3436;         /* Charcoal - Text */
-    --c-light: #F7F9FC;        /* Cloud - Background */
+    /* Mapped from Login Variables */
+    --c-primary: #7CB342;       /* Brand Green - Main Action/Buttons */
+    --c-primary-hover: #689F38; /* Brand Green Hover */
+    --c-secondary: #FFAB40;     /* Brand Orange - Accents/Header */
+    
+    --c-dark: #222222;          /* Dark Strip - Text/Headers */
+    --c-light: #F7F9FC;         /* Background */
     --c-white: #ffffff;
+    
     --shadow-soft: 0 10px 20px rgba(0,0,0,0.05);
-    --shadow-hover: 0 15px 30px rgba(255, 107, 107, 0.15);
+    --shadow-hover: 0 15px 30px rgba(124, 179, 66, 0.2); /* Green shadow */
     --radius-main: 16px;
 }
 
 body {
     background-color: var(--c-light);
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Poppins', 'Segoe UI', sans-serif; /* Added Poppins to match login */
     color: var(--c-dark);
     overflow-x: hidden;
 }
@@ -26,6 +29,7 @@ body {
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     padding: 0.8rem 2rem;
     z-index: 1030;
+    border-top: 5px solid var(--c-secondary); /* Orange Top Strip */
 }
 .brand-text { font-weight: 800; letter-spacing: -0.5px; color: var(--c-dark); }
 .brand-highlight { color: var(--c-primary); }
@@ -45,8 +49,8 @@ body {
     transition: all 0.3s ease;
 }
 .search-input:focus {
-    border-color: var(--c-secondary);
-    box-shadow: 0 0 0 4px rgba(78, 205, 196, 0.2);
+    border-color: var(--c-primary);
+    box-shadow: 0 0 0 4px rgba(124, 179, 66, 0.2);
     outline: none;
 }
 .search-icon {
@@ -77,7 +81,7 @@ body {
 .menu-item-card:hover {
     transform: translateY(-8px);
     box-shadow: var(--shadow-hover);
-    border-color: rgba(255, 107, 107, 0.1);
+    border-color: var(--c-primary);
 }
 
 .card-img-wrapper {
@@ -156,7 +160,7 @@ body {
 .order-item:hover {
     background: white;
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    border-left-color: var(--c-primary);
+    border-left-color: var(--c-secondary); /* Orange highlight on hover */
 }
 
 .order-qty-controls .btn-xs {
@@ -196,15 +200,20 @@ body {
     padding: 16px;
     font-weight: 700;
     letter-spacing: 0.5px;
-    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+    box-shadow: 0 4px 15px rgba(124, 179, 66, 0.4);
     transition: all 0.3s;
     width: 100%;
+}
+
+.btn-outline-secondary:hover {
+     background: #e74c3c;
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
 }
 
 .btn-place-order:hover:not(:disabled) {
     background: var(--c-primary-hover);
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(255, 107, 107, 0.5);
+    box-shadow: 0 8px 20px rgba(124, 179, 66, 0.5);
 }
 
 .btn-place-order:disabled {
@@ -228,7 +237,9 @@ body {
 
 /* MODALS */
 .modal-content { border-radius: 20px; border: none; overflow: hidden; }
-.modal-header.bg-confirm { background: var(--c-secondary); color: white; }
+/* Use Orange for Confirmation Header */
+.modal-header.bg-confirm { background: var(--c-secondary); color: var(--c-dark); } 
+/* Use Dark for Receipt Header */
 .modal-header.bg-receipt { background: var(--c-dark); color: white; }
 
 /* RESPONSIVE */
