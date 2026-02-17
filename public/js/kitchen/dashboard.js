@@ -70,12 +70,22 @@ function renderOrders() {
         const timeStr = new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         // Items List
-        const itemsHtml = order.items.map(i => `
-            <div class="order-item-row">
-                <span>${i.name}</span>
-                <span class="item-qty">x${i.quantity}</span>
-            </div>
-        `).join('');
+const itemsHtml = order.items.map(i => {
+    // Check if image exists, otherwise show nothing or a placeholder
+    const imgTag = i.image_url 
+        ? `<img src="${i.image_url}" alt="${i.name}" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">` 
+        : '';
+
+    return `
+    <div class="order-item-row align-items-center py-2 border-bottom border-light">
+        <div class="d-flex align-items-center" style="overflow: hidden;">
+            ${imgTag}
+            <span class="fw-bold" style="line-height: 1.2;">${i.name}</span>
+        </div>
+        <span class="item-qty fs-6">x${i.quantity}</span>
+    </div>
+    `;
+}).join('');
 
         // Add a Cancel button that only appears for pending or preparing orders
         const cancelButtonHtml = `

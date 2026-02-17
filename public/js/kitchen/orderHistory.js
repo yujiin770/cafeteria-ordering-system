@@ -138,10 +138,19 @@ function filterAndRenderOrders() {
 
         console.log(`DEBUG: Rendering order #${order.orderNumber}. Status: ${currentStatus}, Badge Class: ${badgeClass}`); // Debug log
 
-        // Format Items List
-        const itemsListHtml = order.items.map(item => 
-            `<li>${item.name} <span class="fw-bold text-dark">x${item.quantity}</span></li>`
-        ).join('');
+       // Format Items List
+const itemsListHtml = order.items.map(item => {
+    const imgStyle = "width: 30px; height: 30px; object-fit: cover; border-radius: 4px; vertical-align: middle; margin-right: 5px;";
+    const imgHtml = item.image_url 
+        ? `<img src="${item.image_url}" style="${imgStyle}">` 
+        : '';
+        
+    return `<li style="list-style: none; margin-bottom: 5px;">
+                ${imgHtml} 
+                ${item.name} 
+                <span class="fw-bold text-dark ms-2">x${item.quantity}</span>
+            </li>`;
+}).join('');
 
         const totalAmount = parseFloat(order.total) || 0;
 

@@ -1,298 +1,259 @@
-/* General Admin Dashboard Layout Overrides */
-/* Ensure the main wrapper is a flex container that spans the full height */
-#wrapper {
-    display: flex; /* Helps manage flex items like the overlay */
-    min-height: 100vh;
-    width: 100%;
+/* =========================================
+   THEME: Oh My-Silog Admin (Unified Brand)
+   ========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --brand-green: #7CB342;       /* Primary Action */
+    --brand-green-hover: #689F38;
+    --brand-orange: #FFAB40;      /* Accents/Warning */
+    --brand-dark: #222222;        /* Sidebar/Headers */
+    --brand-gray: #f4f6f9;        /* Background */
+    --text-dark: #333333;
+    --text-muted: #6c757d;
+    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --card-hover-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    --radius: 12px;
 }
 
 body {
-    overflow-x: hidden; /* Prevents horizontal scroll from mobile sidebar transform */
-    background-color: #f8f9fa; /* Ensure body background is light gray */
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--brand-gray);
+    color: var(--text-dark);
 }
 
-
-/* Admin Sidebar Styling - Desktop (Fixed Position) */
+/* ============================
+   SIDEBAR STYLING
+   ============================ */
 #sidebar-wrapper {
-    position: fixed; /* Makes the sidebar stay in place during scroll */
-    top: 0;
-    left: 0;
-    height: 100vh; /* Ensures it takes full viewport height */
-    width: 280px; /* Default expanded width */
-    z-index: 1000; /* Stays on top */
-    background-color: #343a40; /* Dark background */
-    color: white;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.2); /* Stronger subtle shadow for depth */
-    transition: all 0.3s ease; /* Smooth transitions for width */
-    overflow-y: auto; /* Allows sidebar content to scroll if it exceeds height */
+    background-color: var(--brand-dark) !important;
+    border-right: none;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.1);
 }
 
-#sidebar-wrapper.collapsed {
-    width: 80px; /* Collapsed width */
-}
-
-#sidebar-wrapper .sidebar-heading {
+/* Brand Header in Sidebar */
+.sidebar-heading {
+    background-color: var(--brand-dark) !important;
+    color: #fff !important;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     border-bottom: 1px solid rgba(255,255,255,0.1);
-    background-color: #0d6efd; /* Primary blue for admin header */
-    color: white;
-    font-size: 1.25rem; /* Standard heading size */
-    font-weight: bold;
-    padding: 1.25rem 1rem; /* Adjusted padding to prevent text cutoff */
-    display: flex;
-    align-items: center;
-    gap: 10px; /* Space between icon and text */
-}
-/* Ensure the icon for Admin Panel is visible even if text is cut */
-#sidebar-wrapper .sidebar-heading i {
-    flex-shrink: 0; /* Prevent icon from shrinking */
+    padding: 1.5rem 1.25rem;
 }
 
+.sidebar-heading i {
+    color: var(--brand-orange) !important;
+}
+
+/* Sidebar Links */
 #sidebar-wrapper .list-group-item {
+    background-color: transparent !important;
+    color: rgba(255,255,255,0.7) !important;
     border: none;
-    padding: 1rem 1.5rem;
-    transition: all 0.2s;
-    color: rgba(255,255,255,0.7);
-    display: flex; /* Use flex for icon and text alignment */
-    align-items: center;
-    gap: 15px; /* Space between icon and text */
-}
-
-#sidebar-wrapper .list-group-item i {
-    font-size: 1.1rem;
-    width: 25px; /* Fixed width for icons to align text vertically */
-    text-align: center;
-    flex-shrink: 0; /* Prevent icons from shrinking */
-}
-
-#sidebar-wrapper .list-group-item span {
-    flex-grow: 1; /* Allow text to grow */
-    white-space: nowrap; /* Prevent text wrapping */
-    overflow: hidden; /* Hide overflow if text is too long */
-    text-overflow: ellipsis; /* Add ellipsis if text overflows */
+    margin: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
 }
 
 #sidebar-wrapper .list-group-item:hover {
-    background-color: rgba(255,255,255,0.1) !important;
-    transform: translateX(5px); /* Slight hover effect */
-    color: white;
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #fff !important;
+    transform: translateX(5px);
 }
 
-/* The problematic active class rule for admin has been removed from here.
-   It will now be handled by public/css/style.css, which uses the var(--admin-primary) */
-
-
-/* Collapsed Sidebar Adjustments */
-#sidebar-wrapper.collapsed .list-group-item span,
-#sidebar-wrapper.collapsed .sidebar-heading span {
-    display: none; /* Hide text when collapsed */
+#sidebar-wrapper .list-group-item i {
+    width: 25px;
+    text-align: center;
+    margin-right: 10px;
+    transition: color 0.3s;
 }
 
-#sidebar-wrapper.collapsed .list-group-item i {
-    margin-right: 0; /* No margin when text is hidden */
-    width: auto; /* Auto width for centered icon */
+/* Active State */
+#sidebar-wrapper .list-group-item.active {
+    background: linear-gradient(45deg, var(--brand-green), var(--brand-green-hover)) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 10px rgba(124, 179, 66, 0.4);
 }
 
-#sidebar-wrapper.collapsed .sidebar-heading i {
-    margin: 0 auto; /* Center the icon in the heading when collapsed */
-    padding: 0;
+.sidebar-category {
+    color: var(--brand-orange) !important;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding: 1.5rem 1.5rem 0.5rem;
+    opacity: 0.8;
 }
 
-
-/* Page Content Styling - Desktop (Offset for Fixed Sidebar) */
+/* ============================
+   MAIN CONTENT & NAVBAR
+   ============================ */
 #page-content-wrapper {
-    margin-left: 280px; /* Offset for the expanded sidebar */
-    width: calc(100% - 280px); /* Fills remaining width */
-    transition: all 0.3s ease; /* Smooth transition for margin and width */
-    min-width: 0; /* Allow content to shrink below its natural width */
+    background-color: var(--brand-gray);
 }
 
-#page-content-wrapper.sidebar-collapsed {
-    margin-left: 80px; /* Offset for the collapsed sidebar */
-    width: calc(100% - 80px);
+.navbar {
+    background-color: #fff !important;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.03);
+    padding: 1rem 1.5rem;
 }
 
-/* Navbar specific to page-content-wrapper */
-#page-content-wrapper .navbar {
-    background-color: #ffffff; /* Explicitly white for navbar */
-    border-bottom: 1px solid #dee2e6;
-    padding: 1rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075); /* Subtle shadow for navbar */
-    position: sticky; /* Make navbar sticky for larger content */
-    top: 0;
-    z-index: 999; /* Below sidebar, above page content */
+.navbar h1 {
+    font-weight: 700;
+    color: var(--brand-dark);
+    font-size: 1.5rem;
 }
 
-#page-content-wrapper .navbar .h3 {
-    margin-bottom: 0;
-    color: #343a40;
-    font-size: 1.5rem; /* Adjusted title size */
-    margin-left: 1rem; /* Space from toggle button */
+.btn-outline-secondary {
+    border-color: #e0e0e0;
+    color: var(--text-dark);
+}
+.btn-outline-secondary:hover {
+    background-color: var(--brand-orange);
+    border-color: var(--brand-orange);
+    color: #fff;
 }
 
-/* Dashboard Cards - Ensure proper spacing and responsiveness within columns */
-.row.mb-4 > [class*="col-"] {
-    padding-left: 0.75rem; /* Adjust padding for cards in columns */
-    padding-right: 0.75rem;
-}
-.row.mb-4 {
-    margin-left: -0.75rem; /* Compensate for column padding */
-    margin-right: -0.75rem;
+/* ============================
+   DASHBOARD CARDS
+   ============================ */
+/* Modern clean cards instead of solid colors */
+.stat-card {
+    background: #fff;
+    border-radius: var(--radius);
+    border: none;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.3s, box-shadow 0.3s;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
 }
 
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--card-hover-shadow);
+}
+
+/* Colored Top Borders */
+.border-top-success { border-top: 4px solid var(--brand-green); }
+.border-top-warning { border-top: 4px solid var(--brand-orange); }
+.border-top-info { border-top: 4px solid #0dcaf0; }
+.border-top-primary { border-top: 4px solid #0d6efd; }
+
+.stat-card .card-body {
+    padding: 1.5rem;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--brand-dark);
+    line-height: 1.2;
+}
+
+.stat-icon-bg {
+    position: absolute;
+    right: -10px;
+    bottom: -10px;
+    font-size: 5rem;
+    opacity: 0.05;
+    transform: rotate(-15deg);
+}
+
+/* ============================
+   TABLES & LISTS
+   ============================ */
 .card {
     border: none;
-    border-radius: 0.5rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
-    height: 100%; /* Ensure all cards in a row have equal height */
+    border-radius: var(--radius);
+    box-shadow: var(--card-shadow);
+    background-color: #fff;
+    margin-bottom: 1.5rem;
 }
 
 .card-header {
-    background-color: #ffffff;
-    border-bottom: 1px solid #e9ecef;
-    padding: 1rem 1.25rem;
-    font-size: 1.1rem;
+    background-color: #fff;
+    border-bottom: 2px solid #f0f0f0;
+    font-weight: 700;
+    padding: 1.25rem;
+    color: var(--brand-dark);
+    border-top-left-radius: var(--radius) !important;
+    border-top-right-radius: var(--radius) !important;
 }
 
-/* Specific colors for dashboard analytics cards */
-.card.bg-primary { background-color: #0d6efd !important; }
-.card.bg-success { background-color: #198754 !important; }
-.card.bg-warning { background-color: #ffc107 !important; color: #212529 !important; } /* Added dark text for warning */
-.card.bg-info { background-color: #0dcaf0 !important; }
-
-/* Dashboard card content */
-.card .h4 {
-    font-size: 1.75rem;
-    font-weight: bold;
-    word-break: break-all; /* Allow text to break for very long numbers */
-}
-.card .h6 {
-    font-size: 0.9rem;
-    color: rgba(255,255,255,0.7); /* Lighter text for card subtitles */
-}
-
-/* Icons within summary cards */
-.card i.fa-2x {
-    opacity: 0.5; /* Slightly muted icon */
-    flex-shrink: 0; /* Prevent icon from shrinking on small card */
-}
-
-/* Chart */
-#salesChart {
-    max-height: 300px; /* Limit chart height for better aesthetics */
-    width: 100% !important; /* Ensure chart takes full width */
-    min-height: 150px; /* Ensure chart has a minimum height even with no data */
-}
-
-/* List groups for Top Selling Items / Recent Activity */
-.list-group-item {
-    border-color: #e9ecef; /* Light border for list items */
-}
-.list-group-item:first-child { border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; }
-.list-group-item:last-child { border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
-
-
-/* Table styles for management pages (existing) */
-.table-responsive {
-    overflow-x: auto;
-}
-.table th, .table td {
-    vertical-align: middle;
-}
 .table thead th {
-    background-color: #e9ecef;
-    border-bottom: 2px solid #dee2e6;
-    font-weight: bold;
-}
-.table-striped tbody tr:nth-of-type(odd) {
-    background-color: rgba(0,0,0,.02);
+    background-color: #f8f9fa;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    border-bottom: none;
+    padding: 1rem;
 }
 
-/* Form controls in management pages (existing) */
+.table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+    color: var(--text-dark);
+    font-weight: 500;
+}
+
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+    padding: 1rem;
+}
+.list-group-item:last-child { border-bottom: none; }
+
+/* ============================
+   BUTTONS & FORMS
+   ============================ */
+.btn-primary {
+    background-color: var(--brand-green);
+    border-color: var(--brand-green);
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 0.5rem 1.5rem;
+    transition: all 0.3s;
+}
+
+.btn-primary:hover {
+    background-color: var(--brand-green-hover);
+    border-color: var(--brand-green-hover);
+    box-shadow: 0 4px 10px rgba(124, 179, 66, 0.3);
+}
+
+.btn-danger {
+    border-radius: 8px;
+}
+
 .form-control, .form-select {
-    border-radius: 0.3rem;
-}
-.btn {
-    border-radius: 0.3rem;
-}
-
-
-/* Responsive adjustments for smaller screens */
-@media (max-width: 1200px) { /* Adjust for larger desktops/laptops if needed */
-    #page-content-wrapper .navbar .h3 {
-        font-size: 1.3rem; /* Slightly smaller title on slightly smaller desktops */
-    }
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    border: 1px solid #e0e0e0;
 }
 
-@media (max-width: 992px) { /* Tablet and smaller desktops */
-    #sidebar-wrapper {
-        transform: translateX(-100%); /* Hide sidebar off-screen initially */
-        box-shadow: 2px 0 5px rgba(0,0,0,0.5); /* Stronger shadow for mobile slide-out */
-    }
-
-    #sidebar-wrapper.active {
-        transform: translateX(0); /* Bring sidebar into view */
-    }
-
-    #page-content-wrapper {
-        margin-left: 0; /* No margin offset on mobile */
-        width: 100%; /* Content takes full width */
-    }
-
-    #page-content-wrapper.sidebar-collapsed { /* This class is now primarily for desktop toggle */
-        margin-left: 0;
-        width: 100%;
-    }
-
-    #sidebar-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        z-index: 1040; /* Below sidebar, above content */
-        display: none;
-    }
-
-    #sidebar-overlay.active {
-        display: block;
-    }
-
-    #page-content-wrapper .navbar .h3 {
-        font-size: 1.25rem; /* Smaller title on mobile */
-        margin-left: 0.5rem; /* Slightly less space */
-    }
-
-    /* Hide desktop toggle button on mobile */
-    #page-content-wrapper .navbar #sidebarToggle {
-        display: none !important;
-    }
-    /* Show mobile toggle button on mobile */
-    #page-content-wrapper .navbar #sidebarCollapseMobile {
-        display: block !important;
-    }
-
-    /* Adjust cards for smaller tablet views if they become too narrow */
-    .row.mb-4 > .col-md-3 {
-        flex: 0 0 50%; /* Make cards take 50% width (2 per row) */
-        max-width: 50%;
-    }
-    .row > .col-md-6 { /* For top selling/recent activity */
-        flex: 0 0 100%;
-        max-width: 100%;
-    }
+.form-control:focus {
+    border-color: var(--brand-green);
+    box-shadow: 0 0 0 3px rgba(124, 179, 66, 0.1);
 }
 
-@media (max-width: 767px) { /* Mobile devices */
-    .row.mb-4 > .col-md-3 {
-        flex: 0 0 100%; /* Make cards take full width (1 per row) */
-        max-width: 100%;
-    }
-    #page-content-wrapper .container-fluid {
-        padding-left: 0.75rem; /* Slightly reduce overall padding for very small screens */
-        padding-right: 0.75rem;
-    }
-    .card .h4 {
-        font-size: 1.5rem; /* Smaller numbers on very small screens */
-    }
+/* Image Preview Box */
+.image-preview {
+    border-radius: var(--radius);
+    background-color: #f8f9fa;
+    border: 2px dashed #dee2e6;
 }

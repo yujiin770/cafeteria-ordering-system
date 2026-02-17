@@ -1,13 +1,25 @@
 <!-- Admin Sidebar -->
 <div class="admin-theme" id="sidebar-wrapper">
-    <div class="sidebar-heading">
-        <i class="fas fa-utensils"></i> <!-- Icon color from CSS variable -->
-        <span>Admin Panel</span>
+    <div class="sidebar-heading d-flex align-items-center">
+        <!-- Brand Icon/Text -->
+        <i class="fas fa-utensils me-2" style="color: var(--brand-green) !important;"></i> 
+        <span>OH MY-SILOG</span>
     </div>
-    <!-- Placeholder for username -->
-    <div class="text-center py-2 small fw-bold text-white-50" id="sidebar-user-display"></div>
+    
+    <!-- User Welcome -->
+    <div class="px-3 py-3 border-bottom border-dark">
+        <div class="d-flex align-items-center">
+            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white me-2" style="width: 35px; height: 35px;">
+                <i class="fas fa-user"></i>
+            </div>
+            <div>
+                <small class="text-muted d-block" style="font-size: 0.7rem;">Welcome,</small>
+                <div class="fw-bold text-white" id="sidebar-user-display" style="font-size: 0.9rem;">Admin</div>
+            </div>
+        </div>
+    </div>
 
-    <div class="sidebar-category">Main</div>
+    <div class="sidebar-category">MAIN MENU</div>
 
     <div class="list-group list-group-flush">
         <a href="/views/admin/dashboard.html" class="list-group-item list-group-item-action">
@@ -24,7 +36,7 @@
         </a>
     </div>
 
-    <div class="sidebar-category">System</div>
+    <div class="sidebar-category">ADMINISTRATION</div>
 
     <div class="list-group list-group-flush">
         <a href="/views/admin/userManagement.html" class="list-group-item list-group-item-action">
@@ -35,8 +47,8 @@
         </a>
     </div>
 
-    <!-- Logout (Fixed bottom alignment) -->
-    <div class="sidebar-logout-section list-group list-group-flush">
+    <!-- Logout -->
+    <div class="sidebar-logout-section list-group list-group-flush mt-auto pb-4">
         <a href="/" class="list-group-item list-group-item-action text-danger" onclick="localStorage.removeItem('user')">
             <i class="fas fa-sign-out-alt"></i><span>Logout</span>
         </a>

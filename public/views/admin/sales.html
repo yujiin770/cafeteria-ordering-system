@@ -101,20 +101,25 @@
                     </div>
                 </div>
 
-                <!-- Sales Over Time Chart -->
-                <div class="row mb-4">
-                    <div class="col-md-12">
-                        <div class="card shadow-sm">
-                            <div class="card-header bg-white fw-bold">Sales Trend</div>
-                            <div class="card-body">
-                                <canvas id="salesTrendChart"></canvas>
-                                <div class="text-center text-muted p-3" id="salesTrendChartMessage" style="display:none;">
-                                    No sales trend data available for the selected period.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+               <!-- Sales Over Time Chart -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-bold">Sales Trend</div>
+            <div class="card-body">
+                
+                <!-- FIX: Added a wrapper div with fixed height -->
+                <div style="position: relative; height: 350px; width: 100%;">
+                    <canvas id="salesTrendChart"></canvas>
                 </div>
+
+                <div class="text-center text-muted p-3" id="salesTrendChartMessage" style="display:none;">
+                    No sales trend data available for the selected period.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
                 <!-- Top Selling Items Table -->
                 <div class="row">
